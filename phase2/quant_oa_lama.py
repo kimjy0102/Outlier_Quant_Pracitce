@@ -6,7 +6,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 # - channel reordering: outlier.py get_act_stats_opt / reorder_tensor 충실히 이식
 # - weight: 선택적 (--enable_weight_quant, fake_quant_symmetric 사용)
 # - PPL: ver2와 동일한 방식
-
+# 일단 kv cache를 quant 안하고 했을 때의 ppl이 논문에 써있는 값과 상당히 유사하게 나타남 (11.375 vs 11.37)
 import argparse
 import functools
 import math
@@ -302,9 +302,9 @@ def compute_reorder_indices(act_scales, target_layer_indices, module_names, grou
     각 (layer_idx, module_name) 쌍의 input scale로부터 reorder_index, threshold 계산.
     act_scales key 형식: "decoder.layers.{i}.{module_name}.input"
 
-    reorder_tensor의 threshold는 outlier 채널 수 (채널 단위).
-    oa_lama_quantize의 threshold는 outlier 그룹 수 (그룹 단위).
-    → ceil(threshold_channels / group_size) 로 변환.
+    reorder_tensor의 threshold는 outlier 채널 수이자 곧 outlier 그룹 수.
+    interleaving reorder 후 outlier 채널 1개가 각 그룹 마지막에 배치되므로
+    outlier 채널 수 == outlier 그룹 수 → 변환 없이 그대로 사용. (outlier.py L222와 동일)
     """
     reorder_indices = {}
     for layer_idx in target_layer_indices:
@@ -313,12 +313,10 @@ def compute_reorder_indices(act_scales, target_layer_indices, module_names, grou
             if key not in act_scales:
                 print(f"  [Warning] key not found in act_scales: {key}")
                 continue
-            sorted_index, threshold_channels = reorder_tensor(act_scales[key], group_size)
-            # 채널 수 → 그룹 수 변환
-            threshold_groups = math.ceil(int(threshold_channels.item()) / group_size)
+            sorted_index, threshold = reorder_tensor(act_scales[key], group_size)
             reorder_indices[(layer_idx, module_name)] = (
                 sorted_index.cpu(),
-                threshold_groups,
+                int(threshold.item()),
             )
     return reorder_indices
 
@@ -326,31 +324,35 @@ def compute_reorder_indices(act_scales, target_layer_indices, module_names, grou
 # =========================================================
 # 3. Weight fake-quant (ver2와 동일)
 # =========================================================
-def fake_quant_symmetric(x, n_bits=8, mode="tensor", ch_axis=-1, group_size=None, eps=1e-8):
-    qmax = (2 ** (n_bits - 1)) - 1
-    qmin = -qmax - 1
-    x_fp = x.float()
+@torch.no_grad()
+def oa_lama_quantize_weight(
+    w: torch.Tensor,
+    group_size: int,
+    threshold: int,
+):
+    """
+    Apply OA-LAMA-style mixed exponent quantization to weight tensors as a
+    separate static quant stage, similar to QLinearLayer.quant() in the
+    original implementation.
+    """
+    if w.shape[-1] % group_size != 0:
+        raise ValueError(
+            f"Last dim ({w.shape[-1]}) must be divisible by weight_group_size ({group_size})"
+        )
 
-    if mode == "tensor":
-        max_abs = x_fp.abs().max()
-        scale = (max_abs / qmax).clamp_min(eps)
-        return (torch.round(x_fp / scale).clamp(qmin, qmax) * scale).to(x.dtype)
+    group_num = w.shape[-1] // group_size
+    if threshold < 0 or threshold >= group_num:
+        raise ValueError(
+            f"weight threshold must be in [0, {group_num - 1}], got {threshold}"
+        )
 
-    elif mode == "per_channel":
-        axis = resolve_axis(x_fp.dim(), ch_axis)
-        reduce_dims = tuple(d for d in range(x_fp.dim()) if d != axis)
-        max_abs = x_fp.abs().amax(dim=reduce_dims, keepdim=True)
-        scale = (max_abs / qmax).clamp_min(eps)
-        return (torch.round(x_fp / scale).clamp(qmin, qmax) * scale).to(x.dtype)
-
-    elif mode == "group":
-        num_groups = x_fp.shape[-1] // group_size
-        xg = x_fp.reshape(x_fp.shape[:-1] + (num_groups, group_size))
-        max_abs = xg.abs().amax(dim=-1, keepdim=True)
-        scale = (max_abs / qmax).clamp_min(eps)
-        return (torch.round(xg / scale).clamp(qmin, qmax) * scale).reshape_as(x_fp).to(x.dtype)
-
-    raise ValueError(f"Unsupported mode: {mode}")
+    w_scale = int(13 - (w.abs().max().half().view(torch.int16).item() >> 10))
+    return oa_lama_quantize(
+        w,
+        scale=w_scale,
+        group_size=group_size,
+        threshold=threshold,
+    )
 
 
 # =========================================================
@@ -381,6 +383,7 @@ class OALAMALinear(nn.Module):
         self.act_group_size = act_group_size
         self.act_threshold  = act_threshold
         self.debug_name     = debug_name
+        self.weight_group_size = weight_group_size
 
         # OA-LAMA Quantizer.init 패턴
         self.init  = True
@@ -404,10 +407,16 @@ class OALAMALinear(nn.Module):
             # OA-LAMA 방식: activation과 동일한 exponent-based mixed 3/4-bit 그룹 양자화
             # reorder 후 마지막 act_threshold개 그룹이 outlier 그룹 → activation과 동일 threshold 사용
             # weight의 global shift 하한선을 정적으로 계산 (activation은 첫 배치에서 동적 결정)
-            w_scale = int(13 - (weight.abs().max().half().view(torch.int16).item() >> 10))
-            weight = oa_lama_quantize(
+            if act_group_size != weight_group_size:
+                raise ValueError(
+                    "Current OA-LAMA reproduction path expects "
+                    "act_group_size == weight_group_size when sharing threshold. "
+                    f"Got act_group_size={act_group_size}, "
+                    f"weight_group_size={weight_group_size}."
+                )
+
+            weight = oa_lama_quantize_weight(
                 weight,
-                scale=w_scale,
                 group_size=weight_group_size,
                 threshold=act_threshold,
             )

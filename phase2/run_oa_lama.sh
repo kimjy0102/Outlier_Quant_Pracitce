@@ -6,7 +6,7 @@ WEIGHT_GROUP_SIZE=16
 REORDER=true          # true: channel reordering 활성화 (outlier 8-bit 처리 포함)
 N_CALIB_SAMPLES=128
 CALIB_SEQLEN=2048
-ACT_SORT_METRIC="hessian"
+ACT_SORT_METRIC="abs_mean"
 OUTPUT_DIR="results_oa_lama_gs${ACT_GROUP_SIZE}_reorder${REORDER}"
 
 echo "======================================================"
