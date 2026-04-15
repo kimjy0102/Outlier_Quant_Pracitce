@@ -1,24 +1,24 @@
-__pycache__
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
 
 .env
-.venv
-venv
+.venv/
+venv/
 
 *.pt
 *.pth
 *.ckpt
 *.bin
 
-logs
-outputs
-results
-wandb
-runs
+logs/
+outputs/
+results/
+wandb/
+runs/
 
-data
-datasets
+data/
+datasets/
 
-.ipynb_checkpoints
+.ipynb_checkpoints/
