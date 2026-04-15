@@ -1,0 +1,35 @@
+target_name: layer20.qkv_shared_input
+source_module: self_attn.q_proj
+hook_type: input
+global_mean_abs: 0.56210322
+global_std_abs: 0.82184731
+global_max_abs: 61.65625000
+threshold_mean_plus_3std: 3.02764515
+approx_p99: 2.005859375
+approx_p999: 4.46875
+approx_p9999: 40.25
+global_outlier_ratio: 0.00109255
+
+Top-10 channel_mean_abs indices and values:
+ 1. idx= 2394, channel_mean_abs=41.41912956
+ 2. idx= 2972, channel_mean_abs=14.24113264
+ 3. idx= 3136, channel_mean_abs=10.77079802
+ 4. idx= 1978, channel_mean_abs=2.16226622
+ 5. idx= 2550, channel_mean_abs=2.12875924
+ 6. idx= 2502, channel_mean_abs=2.04438681
+ 7. idx= 1666, channel_mean_abs=1.97194893
+ 8. idx= 1765, channel_mean_abs=1.59463543
+ 9. idx=  639, channel_mean_abs=1.52766699
+10. idx=  753, channel_mean_abs=1.34025929
+
+Top-10 channel_max_abs indices and values:
+ 1. idx= 2394, channel_max_abs=61.65625000
+ 2. idx= 2972, channel_max_abs=17.82812500
+ 3. idx=  639, channel_max_abs=14.85937500
+ 4. idx= 3136, channel_max_abs=13.92968750
+ 5. idx= 1461, channel_max_abs=9.43750000
+ 6. idx= 3312, channel_max_abs=7.83593750
+ 7. idx= 1778, channel_max_abs=7.81640625
+ 8. idx= 1978, channel_max_abs=7.18750000
+ 9. idx= 2502, channel_max_abs=7.06640625
+10. idx= 1765, channel_max_abs=6.87109375

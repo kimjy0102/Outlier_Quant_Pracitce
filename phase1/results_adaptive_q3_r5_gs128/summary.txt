@@ -1,0 +1,237 @@
+[Config]
+model_id           : facebook/opt-6.7b
+replace_scope      : all
+one_layer_idx      : 10
+target_modules     : ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.out_proj', 'fc1', 'fc2']
+eval_split         : test
+
+[Weight Quant]
+enable_weight_quant: True
+weight_bits        : 4
+weight_quant_mode  : group
+weight_ch_axis     : 0
+weight_group_size  : 64
+
+[Adaptive QR]
+q_bits             : 3
+r_bits             : 5
+r_group_size       : 128
+
+[Baseline]
+baseline_ppl : 10.86030483
+
+[Replacement]
+replaced_count : 192
+  - layer0.self_attn.q_proj
+  - layer0.self_attn.k_proj
+  - layer0.self_attn.v_proj
+  - layer0.self_attn.out_proj
+  - layer0.fc1
+  - layer0.fc2
+  - layer1.self_attn.q_proj
+  - layer1.self_attn.k_proj
+  - layer1.self_attn.v_proj
+  - layer1.self_attn.out_proj
+  - layer1.fc1
+  - layer1.fc2
+  - layer2.self_attn.q_proj
+  - layer2.self_attn.k_proj
+  - layer2.self_attn.v_proj
+  - layer2.self_attn.out_proj
+  - layer2.fc1
+  - layer2.fc2
+  - layer3.self_attn.q_proj
+  - layer3.self_attn.k_proj
+  - layer3.self_attn.v_proj
+  - layer3.self_attn.out_proj
+  - layer3.fc1
+  - layer3.fc2
+  - layer4.self_attn.q_proj
+  - layer4.self_attn.k_proj
+  - layer4.self_attn.v_proj
+  - layer4.self_attn.out_proj
+  - layer4.fc1
+  - layer4.fc2
+  - layer5.self_attn.q_proj
+  - layer5.self_attn.k_proj
+  - layer5.self_attn.v_proj
+  - layer5.self_attn.out_proj
+  - layer5.fc1
+  - layer5.fc2
+  - layer6.self_attn.q_proj
+  - layer6.self_attn.k_proj
+  - layer6.self_attn.v_proj
+  - layer6.self_attn.out_proj
+  - layer6.fc1
+  - layer6.fc2
+  - layer7.self_attn.q_proj
+  - layer7.self_attn.k_proj
+  - layer7.self_attn.v_proj
+  - layer7.self_attn.out_proj
+  - layer7.fc1
+  - layer7.fc2
+  - layer8.self_attn.q_proj
+  - layer8.self_attn.k_proj
+  - layer8.self_attn.v_proj
+  - layer8.self_attn.out_proj
+  - layer8.fc1
+  - layer8.fc2
+  - layer9.self_attn.q_proj
+  - layer9.self_attn.k_proj
+  - layer9.self_attn.v_proj
+  - layer9.self_attn.out_proj
+  - layer9.fc1
+  - layer9.fc2
+  - layer10.self_attn.q_proj
+  - layer10.self_attn.k_proj
+  - layer10.self_attn.v_proj
+  - layer10.self_attn.out_proj
+  - layer10.fc1
+  - layer10.fc2
+  - layer11.self_attn.q_proj
+  - layer11.self_attn.k_proj
+  - layer11.self_attn.v_proj
+  - layer11.self_attn.out_proj
+  - layer11.fc1
+  - layer11.fc2
+  - layer12.self_attn.q_proj
+  - layer12.self_attn.k_proj
+  - layer12.self_attn.v_proj
+  - layer12.self_attn.out_proj
+  - layer12.fc1
+  - layer12.fc2
+  - layer13.self_attn.q_proj
+  - layer13.self_attn.k_proj
+  - layer13.self_attn.v_proj
+  - layer13.self_attn.out_proj
+  - layer13.fc1
+  - layer13.fc2
+  - layer14.self_attn.q_proj
+  - layer14.self_attn.k_proj
+  - layer14.self_attn.v_proj
+  - layer14.self_attn.out_proj
+  - layer14.fc1
+  - layer14.fc2
+  - layer15.self_attn.q_proj
+  - layer15.self_attn.k_proj
+  - layer15.self_attn.v_proj
+  - layer15.self_attn.out_proj
+  - layer15.fc1
+  - layer15.fc2
+  - layer16.self_attn.q_proj
+  - layer16.self_attn.k_proj
+  - layer16.self_attn.v_proj
+  - layer16.self_attn.out_proj
+  - layer16.fc1
+  - layer16.fc2
+  - layer17.self_attn.q_proj
+  - layer17.self_attn.k_proj
+  - layer17.self_attn.v_proj
+  - layer17.self_attn.out_proj
+  - layer17.fc1
+  - layer17.fc2
+  - layer18.self_attn.q_proj
+  - layer18.self_attn.k_proj
+  - layer18.self_attn.v_proj
+  - layer18.self_attn.out_proj
+  - layer18.fc1
+  - layer18.fc2
+  - layer19.self_attn.q_proj
+  - layer19.self_attn.k_proj
+  - layer19.self_attn.v_proj
+  - layer19.self_attn.out_proj
+  - layer19.fc1
+  - layer19.fc2
+  - layer20.self_attn.q_proj
+  - layer20.self_attn.k_proj
+  - layer20.self_attn.v_proj
+  - layer20.self_attn.out_proj
+  - layer20.fc1
+  - layer20.fc2
+  - layer21.self_attn.q_proj
+  - layer21.self_attn.k_proj
+  - layer21.self_attn.v_proj
+  - layer21.self_attn.out_proj
+  - layer21.fc1
+  - layer21.fc2
+  - layer22.self_attn.q_proj
+  - layer22.self_attn.k_proj
+  - layer22.self_attn.v_proj
+  - layer22.self_attn.out_proj
+  - layer22.fc1
+  - layer22.fc2
+  - layer23.self_attn.q_proj
+  - layer23.self_attn.k_proj
+  - layer23.self_attn.v_proj
+  - layer23.self_attn.out_proj
+  - layer23.fc1
+  - layer23.fc2
+  - layer24.self_attn.q_proj
+  - layer24.self_attn.k_proj
+  - layer24.self_attn.v_proj
+  - layer24.self_attn.out_proj
+  - layer24.fc1
+  - layer24.fc2
+  - layer25.self_attn.q_proj
+  - layer25.self_attn.k_proj
+  - layer25.self_attn.v_proj
+  - layer25.self_attn.out_proj
+  - layer25.fc1
+  - layer25.fc2
+  - layer26.self_attn.q_proj
+  - layer26.self_attn.k_proj
+  - layer26.self_attn.v_proj
+  - layer26.self_attn.out_proj
+  - layer26.fc1
+  - layer26.fc2
+  - layer27.self_attn.q_proj
+  - layer27.self_attn.k_proj
+  - layer27.self_attn.v_proj
+  - layer27.self_attn.out_proj
+  - layer27.fc1
+  - layer27.fc2
+  - layer28.self_attn.q_proj
+  - layer28.self_attn.k_proj
+  - layer28.self_attn.v_proj
+  - layer28.self_attn.out_proj
+  - layer28.fc1
+  - layer28.fc2
+  - layer29.self_attn.q_proj
+  - layer29.self_attn.k_proj
+  - layer29.self_attn.v_proj
+  - layer29.self_attn.out_proj
+  - layer29.fc1
+  - layer29.fc2
+  - layer30.self_attn.q_proj
+  - layer30.self_attn.k_proj
+  - layer30.self_attn.v_proj
+  - layer30.self_attn.out_proj
+  - layer30.fc1
+  - layer30.fc2
+  - layer31.self_attn.q_proj
+  - layer31.self_attn.k_proj
+  - layer31.self_attn.v_proj
+  - layer31.self_attn.out_proj
+  - layer31.fc1
+  - layer31.fc2
+
+
+========================================
+ Quotient (Q) Distribution Summary
+========================================
+ Q =  -3 :      1903670416 개 (  0.56%)
+ Q =  -2 :     10290896395 개 (  3.04%)
+ Q =  -1 :     39255816982 개 ( 11.61%)
+ Q =  -0 :    232232775984 개 ( 68.66%)
+ Q =   1 :     40613805094 개 ( 12.01%)
+ Q =   2 :     10876263111 개 (  3.22%)
+ Q =   3 :      3055446578 개 (  0.90%)
+----------------------------------------
+ Total Elements : 338228674560
+========================================
+
+[Modified]
+modified_ppl : 11.09468555
+ppl_diff     : 2.343807220459e-01
+relative_diff: 2.158141282972e-02
+

@@ -1,0 +1,35 @@
+target_name: layer20.out_proj_input
+source_module: self_attn.out_proj
+hook_type: input
+global_mean_abs: 0.12378215
+global_std_abs: 0.17827412
+global_max_abs: 4.67968750
+threshold_mean_plus_3std: 0.65860451
+approx_p99: 0.66162109375
+approx_p999: 1.2802734375
+approx_p9999: 2.283203125
+global_outlier_ratio: 0.02132929
+
+Top-10 channel_mean_abs indices and values:
+ 1. idx= 2444, channel_mean_abs=1.86249997
+ 2. idx= 3847, channel_mean_abs=1.32171832
+ 3. idx= 3487, channel_mean_abs=1.10002126
+ 4. idx= 1953, channel_mean_abs=0.95997776
+ 5. idx= 1962, channel_mean_abs=0.78306038
+ 6. idx=  100, channel_mean_abs=0.77483902
+ 7. idx=  933, channel_mean_abs=0.72538393
+ 8. idx=  548, channel_mean_abs=0.72414807
+ 9. idx= 3687, channel_mean_abs=0.70934650
+10. idx= 2970, channel_mean_abs=0.68376682
+
+Top-10 channel_max_abs indices and values:
+ 1. idx= 2444, channel_max_abs=4.67968750
+ 2. idx= 1500, channel_max_abs=4.56250000
+ 3. idx= 2427, channel_max_abs=4.27343750
+ 4. idx= 2970, channel_max_abs=4.25390625
+ 5. idx= 3847, channel_max_abs=4.13281250
+ 6. idx= 2326, channel_max_abs=3.97070312
+ 7. idx=  933, channel_max_abs=3.91601562
+ 8. idx= 1953, channel_max_abs=3.84375000
+ 9. idx= 1962, channel_max_abs=3.83593750
+10. idx= 3132, channel_max_abs=3.80859375

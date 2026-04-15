@@ -1,0 +1,27 @@
+[Config]
+model_id          : facebook/opt-6.7b
+smooth_alpha      : 0.5
+n_calib_samples   : 128
+calib_seqlen      : 2048
+
+[Weight Quant]
+enable_weight_quant: True
+weight_bits        : 8
+weight_quant_mode  : tensor
+weight_group_size  : 128
+
+[Act Quant]
+enable_act_quant   : True
+act_bits           : 8
+act_quant_mode     : per_token (O1-per-token)
+
+[Baseline]
+baseline_ppl : 10.86030483
+
+[SmoothQuant]
+n_applied : 64
+
+[SmoothQuant PPL]
+sq_ppl      : 10.87865353
+ppl_diff    : 1.834869384766e-02
+

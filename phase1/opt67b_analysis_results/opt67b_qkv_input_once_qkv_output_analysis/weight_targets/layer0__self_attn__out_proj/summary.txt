@@ -1,0 +1,30 @@
+module_name: layer0.self_attn.out_proj
+global_mean_abs: 0.00351530
+global_std_abs: 0.00491589
+global_max_abs: 0.25000000
+threshold_mean_plus_3std: 0.01826297
+global_outlier_ratio: 0.00160855
+
+Top-10 input_channel_mean_abs indices and values:
+ 1. idx=  580, input_channel_mean_abs=0.00585464
+ 2. idx= 3085, input_channel_mean_abs=0.00579379
+ 3. idx= 4086, input_channel_mean_abs=0.00564827
+ 4. idx= 2908, input_channel_mean_abs=0.00561490
+ 5. idx= 1888, input_channel_mean_abs=0.00555280
+ 6. idx= 2856, input_channel_mean_abs=0.00554795
+ 7. idx=  267, input_channel_mean_abs=0.00552492
+ 8. idx=  667, input_channel_mean_abs=0.00552189
+ 9. idx= 2223, input_channel_mean_abs=0.00544319
+10. idx= 2893, input_channel_mean_abs=0.00543414
+
+Top-10 output_channel_mean_abs indices and values:
+ 1. idx= 2394, output_channel_mean_abs=0.20135382
+ 2. idx= 2972, output_channel_mean_abs=0.09288620
+ 3. idx=  639, output_channel_mean_abs=0.08501358
+ 4. idx= 2717, output_channel_mean_abs=0.07355747
+ 5. idx= 3136, output_channel_mean_abs=0.06138235
+ 6. idx= 1778, output_channel_mean_abs=0.02642907
+ 7. idx=  314, output_channel_mean_abs=0.00680322
+ 8. idx= 1666, output_channel_mean_abs=0.00670306
+ 9. idx= 2255, output_channel_mean_abs=0.00645284
+10. idx= 3931, output_channel_mean_abs=0.00542426

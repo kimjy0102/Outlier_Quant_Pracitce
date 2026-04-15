@@ -1,0 +1,29 @@
+[Config]
+model_id           : facebook/opt-6.7b
+replace_scope      : all
+target_modules     : ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.out_proj', 'fc1', 'fc2']
+n_calib_samples    : 128
+calib_seqlen       : 2048
+
+[Weight Quant]
+enable_weight_quant: True
+weight_bits        : 4
+weight_quant_mode  : group
+weight_group_size  : 16
+
+[QR Config]
+q_bits             : 4
+r_bits             : 4
+r_group_size       : 16
+
+[Baseline]
+baseline_ppl : 10.86030483
+
+[Replacement]
+replaced_count : 192
+
+[Modified (first-batch static, oa-lama style)]
+modified_ppl : 11.22883415
+ppl_diff     : 3.685293197632e-01
+relative_diff: 3.393360733870e-02
+

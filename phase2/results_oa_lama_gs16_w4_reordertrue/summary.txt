@@ -1,0 +1,33 @@
+[Config]
+model_id           : facebook/opt-6.7b
+replace_scope      : all
+target_modules     : ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.out_proj', 'fc1', 'fc2']
+act_group_size     : 16
+act_threshold      : 0
+reorder            : True
+n_calib_samples    : 128
+act_sort_metric    : hessian
+
+[Weight Quant]
+enable_weight_quant: True
+weight_bits        : 4
+weight_group_size  : 16
+
+[Baseline]
+baseline_ppl : 10.86030483
+
+[Reorder]
+n_modules_reordered: 192
+n_outlier_threshold>0: 192
+threshold_min: 1
+threshold_max: 14
+threshold_mean: 1.6
+
+[Replacement]
+replaced_count : 192
+
+[OA-LAMA Quant]
+modified_ppl : 12.29398441
+ppl_diff     : 1.433679580688e+00
+relative_diff: 1.320109889000e-01
+
