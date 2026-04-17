@@ -218,17 +218,63 @@ class QuotRemLinear(nn.Module):
         max_abs = xg.abs().amax(dim=-1, keepdim=True).clamp_min(eps)  # [..., G, 1]
 
         if self.q_bits == 1:
-            # 1-bit Q: {0, 1}, base >= max_abs 를 만족하는 가장 작은 2의 승수
-            base = torch.full_like(max_abs, 64.0)
-            base = torch.where(max_abs <= 32.0, torch.full_like(max_abs, 32.0), base)
-            base = torch.where(max_abs <= 16.0, torch.full_like(max_abs, 16.0), base)
-            base = torch.where(max_abs <=  8.0, torch.full_like(max_abs,  8.0), base)
-            base = torch.where(max_abs <=  4.0, torch.full_like(max_abs,  4.0), base)
-            base = torch.where(max_abs <=  2.0, torch.full_like(max_abs,  2.0), base)
+            # ceiling method
+            #base = torch.full_like(max_abs, 64.0)
+            #base = torch.where(max_abs <= 32.0, torch.full_like(max_abs, 32.0), base)
+            #base = torch.where(max_abs <= 16.0, torch.full_like(max_abs, 16.0), base)
+            #base = torch.where(max_abs <=  8.0, torch.full_like(max_abs,  8.0), base)
+            #base = torch.where(max_abs <=  4.0, torch.full_like(max_abs,  4.0), base)
+            #base = torch.where(max_abs <=  2.0, torch.full_like(max_abs,  2.0), base)
+            
+            
+            #1-bit Q: {0, 1}, max_abs에 가장 가까운 2의 제곱 선택
+            log2_max = torch.log2(max_abs)
+            log2_floor = torch.floor(log2_max)  # floor 값과 ceil 값 두개 모두 계산
+            log2_ceil = torch.ceil(log2_max)
 
-            # Q=1 if x >= base/2, else Q=0
+            base_floor = torch.pow(2.0, log2_floor)     # 마찬가지로 base 값도 두종류 
+            base_ceil = torch.pow(2.0, log2_ceil)
+    
+            dist_floor = torch.abs(max_abs - base_floor)     # dist 계산해서 더 가까운 걸로 결정
+            dist_ceil = torch.abs(base_ceil - max_abs)
+            base = torch.where(dist_floor <= dist_ceil, base_floor, base_ceil)
+            base = base.clamp(min=2.0, max=64.0)
+
+            # Hardware 방식: dist 이용
+            #candidates = torch.tensor([2.0, 4.0, 8.0, 16.0, 32.0, 64.0], device=xg.device)
+            #cand = candidates.view(*([1] * (max_abs.dim() - 1)), -1)   # broadcast shape
+            #dist = torch.abs(max_abs.squeeze(-1).unsqueeze(-1) - cand)
+            #base = candidates[dist.argmin(dim=-1)].unsqueeze(-1)            
+
+            # signed base: group 내 abs 최대 원소의 부호를 base에 흡수
+            # Q ∈ {0,1}, 복원식: x = base_signed * Q + r (sign 의존 없음)
+#
+            q = (xg.abs() >= base / 2.0).float()
+            #base_sign   = torch.sign(
+            #    xg.gather(-1, xg.abs().argmax(dim=-1, keepdim=True))
+            #)  # [..., G, 1]
+            #base = base * base_sign
+            #r = xg - base * q
+
+            # negative 고려 x
             q = (xg >= base / 2.0).float()
             r = xg - base * q
+
+            # --- [Folded 방식] ---
+            # ceiling base 필수 (nearest 사용 시 base < max_abs 이면 → 복원 공식 깨짐)
+            #base_ceiling = torch.full_like(max_abs, 64.0)
+            #base_ceiling = torch.where(max_abs <= 32.0, torch.full_like(max_abs, 32.0), base_ceiling)
+            #base_ceiling = torch.where(max_abs <= 16.0, torch.full_like(max_abs, 16.0), base_ceiling)
+            #base_ceiling = torch.where(max_abs <=  8.0, torch.full_like(max_abs,  8.0), base_ceiling)
+            #base_ceiling = torch.where(max_abs <=  4.0, torch.full_like(max_abs,  4.0), base_ceiling)
+            #base_ceiling = torch.where(max_abs <=  2.0, torch.full_like(max_abs,  2.0), base_ceiling)
+            #base = base_ceiling
+            ##
+            #xg_abs = xg.abs()
+            #q = (xg_abs >= base / 2.0).float()
+            #r = torch.sign(xg) * (xg_abs - base * q)
+            # --- [Folded 방식 끝] ---
+
 
         else:
             q_max_val = (2 ** (self.q_bits - 1)) - 1
@@ -252,12 +298,34 @@ class QuotRemLinear(nn.Module):
         r_dq      = r_q * scale_r
 
         # reconstruct
-        x_recon = base * q + r_dq                            # [..., G, gs]
-        return x_recon.reshape_as(x_fp).to(x.dtype)
+        # q_bits==1 signed base: x = base_signed * Q + r_dq
+        # q_bits>=2 standard:    x = base * Q + r_dq
+        if self.q_bits == 1:
+            #base_sign = torch.sign(xg.gather(-1, xg.abs().argmax(dim=-1, keepdim=True)))
+            #sign_safe = torch.where(r_dq != 0, torch.sign(r_dq), -base_sign)
+            # x_recon = r_dq - q * sign_safe * base = q_scaled + r_dq
+            # q_scaled: Q가 weight에 곱해질 때의 실질적 기여값 (부호 포함)
+            #q_scaled = -q * sign_safe * base                  # [..., G, gs]
+            q_scaled = q * base # signed base method
+        else:
+            q_scaled = base * q                               # [..., G, gs]
+
+        # (q_scaled, r_dq) 튜플 반환 — forward에서 각각 matmul
+        return (
+            q_scaled.reshape_as(x_fp).to(x.dtype),
+            r_dq.reshape_as(x_fp).to(x.dtype),
+        )
 
     def forward(self, x):
-        x_recon = self._adaptive_base_forward(x)
-        return F.linear(x_recon, self.weight, self.bias)
+        q_scaled, r_dq = self._adaptive_base_forward(x)
+        # 몫 기여: Q_scaled @ W  (= Q * base * W, 부호 포함)
+        q_out = F.linear(q_scaled, self.weight, None)
+        # 나머지 기여: R_dq @ W
+        r_out = F.linear(r_dq, self.weight, None)
+        out = q_out + r_out
+        if self.bias is not None:
+            out = out + self.bias
+        return out
 
 
 # =========================================================

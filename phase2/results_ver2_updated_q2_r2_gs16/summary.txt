@@ -13,8 +13,8 @@ weight_ch_axis     : 0
 weight_group_size  : 16
 
 [Adaptive QR]
-q_bits             : 1
-r_bits             : 3
+q_bits             : 2
+r_bits             : 2
 r_group_size       : 16
 
 [Baseline]
@@ -216,7 +216,7 @@ replaced_count : 192
   - layer31.fc2
 
 [Modified]
-modified_ppl : 11.32211399
-ppl_diff     : 4.618091583252e-01
-relative_diff: 4.252266998482e-02
+modified_ppl : 17.99576950
+ppl_diff     : 7.135464668274e+00
+relative_diff: 6.570225033599e-01
 
