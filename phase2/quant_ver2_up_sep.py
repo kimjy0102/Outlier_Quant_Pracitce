@@ -3,6 +3,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 # ver 2 + q distribution 수집 + 코드 정리
 # base가 2의 승수 -> CIM SHIFT 연산 간단화는 간단하지만, PPL 살짝 손해 값 선택 범위는 (2,~64)
 # R scale은 자기만의 타이트하게 결정, 몫은 분포 출력은 x 
+# updated 버전에서 추가: 나눌 base 값을 정하는 group과 residual을 정하는 group을 분리 시도\
+# base와 group 분리 및 음수 base 도 가능하게 하고 q 결정 조건 추가 (현재 best)
 import argparse
 import random
 from pathlib import Path
@@ -150,7 +152,9 @@ class QuotRemLinear(nn.Module):
         weight_group_size: int = 128,
         q_bits: int = 4,
         r_bits: int = 4,
-        r_group_size: int = 128,
+        base_group_size: int = 128,        # 추가: base(나눌 값)를 결정할 group 크기 (-1이면 per-tensor)
+        r_group_size: int = 128,           # R quantization을 위한 group 크기 (-1이면 per-tensor)
+        collect_residuals: bool = False,   # 분석용: True이면 R 값을 _r_buf에 수집
         debug_name: str = "",
     ):
         super().__init__()
@@ -162,9 +166,15 @@ class QuotRemLinear(nn.Module):
         self.out_features = base_linear.out_features
         self.debug_name   = debug_name
 
-        self.q_bits       = q_bits
-        self.r_bits       = r_bits
-        self.r_group_size = r_group_size
+        self.q_bits              = q_bits
+        self.r_bits              = r_bits
+        self.base_group_size     = base_group_size    # base 결정 group (R group과 독립)
+        self.r_group_size        = r_group_size       # R quant group
+        self.collect_residuals   = collect_residuals  # 분석 모드 플래그
+        self._r_buf: list        = []                 # R 값 누적 버퍼 (분석 모드에서만 채워짐)
+        self._q_buf: list        = []                 # Q 값 누적 버퍼 (분석 모드에서만 채워짐)
+        self._base_buf: list     = []                 # base 값 누적 버퍼 (분석 모드에서만 채워짐)
+        self._max_r_samples: int = 100_000            # 버퍼 최대 원소 수 (메모리 방지)
 
         if enable_weight_quant:
             w_q = fake_quant_symmetric(
@@ -197,90 +207,69 @@ class QuotRemLinear(nn.Module):
 
         q_bits == 1:
           Q ∈ {0, 1} (unsigned binary)
-          base = {2,4,8,16,32,64} 중 max_abs <= b 를 만족하는 가장 작은 값
+          base = {2,4,8,16,32,64,128} 중 max_abs <= b 를 만족하는 가장 작은 값
           Q = 1 if x >= base/2 else 0
           R = x - base * Q
 
         R scale은 실제 R 분포의 max_abs로 독립적으로 결정.
         """
-        r_max_val = (2 ** (self.r_bits - 1)) - 1
-        r_min_val = -r_max_val - 1
-        eps = 1e-8
-        gs  = self.r_group_size
+        r_max_val = (2 ** (self.r_bits - 1)) - 1     # R 양자화 최대값 (signed)
+        r_min_val = -r_max_val - 1                   # R 양자화 최소값 (signed)
+        eps = 1e-8                                   # log/division 안전용 작은 값
 
-        x_fp       = x.float()
-        orig_shape = x_fp.shape
-        H          = orig_shape[-1]
-        assert H % gs == 0, f"Last dim {H} not divisible by r_group_size {gs}"
+        x_fp       = x.float()                       # 계산은 float32로 정확하게
+        orig_shape = x_fp.shape                      # 마지막에 원래 shape으로 복원
+        H          = orig_shape[-1]                  # hidden dim (마지막 차원 길이)
 
-        xg = x_fp.reshape(orig_shape[:-1] + (H // gs, gs))  # [..., G, gs]
+        # base/r group size 해석: -1이면 per-tensor (= H 전체를 한 group으로)
+        base_gs = H if self.base_group_size == -1 else self.base_group_size  # base 결정 group
+        r_gs    = H if self.r_group_size    == -1 else self.r_group_size     # R quant group
 
-        max_abs = xg.abs().amax(dim=-1, keepdim=True).clamp_min(eps)  # [..., G, 1]
+        # 두 group은 서로 정렬될 필요 없음 — 각자 H의 약수이기만 하면 됨
+        assert H % base_gs == 0, f"H={H} not divisible by base_group_size={base_gs}"
+        assert H % r_gs    == 0, f"H={H} not divisible by r_group_size={r_gs}"
+
+        # =================== Step 1: base 결정 (base_gs 단위) ===================
+        G_base  = H // base_gs                                                      # base group 개수
+        xg_base = x_fp.reshape(orig_shape[:-1] + (G_base, base_gs))                 # [..., G_base, base_gs]
+        max_abs = xg_base.abs().amax(dim=-1, keepdim=True).clamp_min(eps)           # group별 max|x|
 
         if self.q_bits == 1:
-            # ceiling method
-            #base = torch.full_like(max_abs, 64.0)
-            #base = torch.where(max_abs <= 32.0, torch.full_like(max_abs, 32.0), base)
-            #base = torch.where(max_abs <= 16.0, torch.full_like(max_abs, 16.0), base)
-            #base = torch.where(max_abs <=  8.0, torch.full_like(max_abs,  8.0), base)
-            #base = torch.where(max_abs <=  4.0, torch.full_like(max_abs,  4.0), base)
-            #base = torch.where(max_abs <=  2.0, torch.full_like(max_abs,  2.0), base)
-            
-            
-            #1-bit Q: {0, 1}, max_abs에 가장 가까운 2의 제곱 선택
-            log2_max = torch.log2(max_abs)
-            log2_floor = torch.floor(log2_max)  # floor 값과 ceil 값 두개 모두 계산
-            log2_ceil = torch.ceil(log2_max)
+            # --- 1-bit Q: nearest 2의 승수 base 선택 (현재 active 방식) ---
+            log2_max   = torch.log2(max_abs)                                        # log2(max_abs) — 어느 2의 승수에 가까운지 판단용
+            log2_floor = torch.floor(log2_max)                                      # 아래쪽 가장 가까운 정수
+            log2_ceil  = torch.ceil(log2_max)                                       # 위쪽 가장 가까운 정수
+            base_floor = torch.pow(2.0, log2_floor)                                 # floor 후보 base
+            base_ceil  = torch.pow(2.0, log2_ceil)                                  # ceil 후보 base
+            dist_floor = torch.abs(max_abs - base_floor)                            # max_abs와 floor 후보의 거리
+            dist_ceil  = torch.abs(base_ceil  - max_abs)                            # max_abs와 ceil 후보의 거리
+            base = torch.where(dist_floor <= dist_ceil, base_floor, base_ceil)      # 더 가까운 후보 선택 (nearest)
+            base = base.clamp(min=2.0, max=128.0)                                    # base 값 범위를 {2,4,...,64}로 제한
 
-            base_floor = torch.pow(2.0, log2_floor)     # 마찬가지로 base 값도 두종류 
-            base_ceil = torch.pow(2.0, log2_ceil)
-    
-            dist_floor = torch.abs(max_abs - base_floor)     # dist 계산해서 더 가까운 걸로 결정
-            dist_ceil = torch.abs(base_ceil - max_abs)
-            base = torch.where(dist_floor <= dist_ceil, base_floor, base_ceil)
-            base = base.clamp(min=2.0, max=64.0)
+            # 분석 모드: 선택된 base 값들을 버퍼에 subsampling하여 저장 (per-group → flatten)
+            if self.collect_residuals and len(self._base_buf) < self._max_r_samples:
+                base_cpu = base.detach().float().cpu().flatten()                     # [..., G_base, 1] → 1-D
+                remain   = self._max_r_samples - len(self._base_buf)                # 버퍼 잔여 슬롯
+                n_take   = min(len(base_cpu), remain, 10_000)                       # 한 번에 최대 10000개
+                idx      = torch.randperm(len(base_cpu))[:n_take]                  # 랜덤 subsampling
+                self._base_buf.append(base_cpu[idx])                               # 버퍼에 추가
 
-            # Hardware 방식: dist 이용
-            #candidates = torch.tensor([2.0, 4.0, 8.0, 16.0, 32.0, 64.0], device=xg.device)
-            #cand = candidates.view(*([1] * (max_abs.dim() - 1)), -1)   # broadcast shape
-            #dist = torch.abs(max_abs.squeeze(-1).unsqueeze(-1) - cand)
-            #base = candidates[dist.argmin(dim=-1)].unsqueeze(-1)            
-
-            # signed base: group 내 abs 최대 원소의 부호를 base에 흡수
-            # Q ∈ {0,1}, 복원식: x = base_signed * Q + r (sign 의존 없음)
-#
-            q = (xg.abs() >= base / 2.0).float()
-            #base_sign   = torch.sign(
-            #    xg.gather(-1, xg.abs().argmax(dim=-1, keepdim=True))
-            #)  # [..., G, 1]
-            #base = base * base_sign
-            #r = xg - base * q
-
-            # negative 고려 x
-            q = (xg >= base / 2.0).float()
-            r = xg - base * q
-
-            # --- [Folded 방식] ---
-            # ceiling base 필수 (nearest 사용 시 base < max_abs 이면 → 복원 공식 깨짐)
-            #base_ceiling = torch.full_like(max_abs, 64.0)
-            #base_ceiling = torch.where(max_abs <= 32.0, torch.full_like(max_abs, 32.0), base_ceiling)
-            #base_ceiling = torch.where(max_abs <= 16.0, torch.full_like(max_abs, 16.0), base_ceiling)
-            #base_ceiling = torch.where(max_abs <=  8.0, torch.full_like(max_abs,  8.0), base_ceiling)
-            #base_ceiling = torch.where(max_abs <=  4.0, torch.full_like(max_abs,  4.0), base_ceiling)
-            #base_ceiling = torch.where(max_abs <=  2.0, torch.full_like(max_abs,  2.0), base_ceiling)
-            #base = base_ceiling
-            ##
-            #xg_abs = xg.abs()
-            #q = (xg_abs >= base / 2.0).float()
-            #r = torch.sign(xg) * (xg_abs - base * q)
-            # --- [Folded 방식 끝] ---
-
+            # --- sign-aware: group 내 max_abs가 양수/음수 어느 쪽에서 왔는지 판단 ---
+            max_pos_val = xg_base.amax(dim=-1, keepdim=True)                        # group 내 최대값 (signed, 양수 쪽 대표)
+            min_val     = xg_base.amin(dim=-1, keepdim=True)                        # group 내 최솟값 (signed, 음수 쪽 대표)
+            # 양수 쪽 abs >= 음수 쪽 abs이면 +1 (양수 outlier), 반대면 -1 (음수 outlier)
+            sign_flag   = torch.where(max_pos_val.abs() >= min_val.abs(),
+                                      torch.ones_like(max_pos_val),
+                                      -torch.ones_like(max_pos_val))               # shape: [..., G_base, 1]
+            # xg * sign_flag >= base/2 : 양수 outlier면 기존과 동일, 음수 outlier면 xg <= -base/2 와 동치
+            q = (xg_base * sign_flag >= base / 2.0).float()                        # 해당 방향의 큰 값만 q=1
+            r = xg_base - sign_flag * base * q                                     # r = x - sign*base*q
 
         else:
-            q_max_val = (2 ** (self.q_bits - 1)) - 1
-            threshold = max_abs / q_max_val  # qr_base >= threshold 조건
-
-            # {2,4,8,16,32,64} 중 threshold를 만족하는 가장 작은 2의 승수 선택
+            sign_flag = 1.0                                                         # q_bits>=2: q 자체가 signed이므로 sign_flag 불필요
+            q_max_val = (2 ** (self.q_bits - 1)) - 1                                # signed Q의 최대 절대값
+            threshold = max_abs / q_max_val                                         # max_abs/Q_max <= base 조건
+            # {2,4,8,16,32,64} 중 threshold 이상이 되는 가장 작은 2의 승수 선택
             base = torch.full_like(threshold, 64.0)
             base = torch.where(threshold <= 32.0, torch.full_like(threshold, 32.0), base)
             base = torch.where(threshold <= 16.0, torch.full_like(threshold, 16.0), base)
@@ -288,32 +277,46 @@ class QuotRemLinear(nn.Module):
             base = torch.where(threshold <=  4.0, torch.full_like(threshold,  4.0), base)
             base = torch.where(threshold <=  2.0, torch.full_like(threshold,  2.0), base)
 
-            q = torch.round(xg / base).clamp(-q_max_val, q_max_val)
-            r = xg - base * q
+            q = torch.round(xg_base / base).clamp(-q_max_val, q_max_val)            # 정수 Q 양자화
+            r = xg_base - base * q                                                  # 잔여 R
 
-        # R quantize: 실제 R max 기반 독립 scale (tight)
-        max_abs_r = r.abs().amax(dim=-1, keepdim=True).clamp_min(eps)
-        scale_r   = max_abs_r / r_max_val
-        r_q       = torch.round(r / scale_r).clamp(r_min_val, r_max_val)
-        r_dq      = r_q * scale_r
+        # q_scaled: Q가 weight에 곱해질 때의 실질적 기여값 (= sign * Q * base)
+        q_scaled_base = q * sign_flag * base                                        # [..., G_base, base_gs]
 
-        # reconstruct
-        # q_bits==1 signed base: x = base_signed * Q + r_dq
-        # q_bits>=2 standard:    x = base * Q + r_dq
-        if self.q_bits == 1:
-            #base_sign = torch.sign(xg.gather(-1, xg.abs().argmax(dim=-1, keepdim=True)))
-            #sign_safe = torch.where(r_dq != 0, torch.sign(r_dq), -base_sign)
-            # x_recon = r_dq - q * sign_safe * base = q_scaled + r_dq
-            # q_scaled: Q가 weight에 곱해질 때의 실질적 기여값 (부호 포함)
-            #q_scaled = -q * sign_safe * base                  # [..., G, gs]
-            q_scaled = q * base # signed base method
-        else:
-            q_scaled = base * q                               # [..., G, gs]
+        # =================== Step 2: R quantize (r_gs 단위, base와 독립) ===================
+        # r을 원래 shape으로 복원 → r_gs 단위로 다시 reshape (base_gs와 무관)
+        r_flat      = r.reshape(orig_shape)                                         # [..., H]
 
-        # (q_scaled, r_dq) 튜플 반환 — forward에서 각각 matmul
+        # 분석 모드: R 양자화 전 raw R 값을 버퍼에 subsampling하여 저장
+        if self.collect_residuals and len(self._r_buf) < self._max_r_samples:
+            r_cpu  = r_flat.detach().float().cpu().flatten()                        # GPU → CPU, 1-D
+            remain = self._max_r_samples - len(self._r_buf)                        # 버퍼에 남은 여유 슬롯 수
+            n_take = min(len(r_cpu), remain, 10_000)                               # 한 번에 최대 10000개씩만 추가
+            idx    = torch.randperm(len(r_cpu))[:n_take]                           # 랜덤 인덱스로 subsampling
+            self._r_buf.append(r_cpu[idx])                                         # 버퍼에 추가 (cat은 분석 시점에)
+
+        # 분석 모드: Q 값도 동일한 방식으로 버퍼에 저장 (q는 base_gs shape → flatten)
+        if self.collect_residuals and len(self._q_buf) < self._max_r_samples:
+            q_cpu  = q.detach().float().cpu().flatten()                             # Q 값 CPU로 이동
+            remain = self._max_r_samples - len(self._q_buf)
+            n_take = min(len(q_cpu), remain, 10_000)
+            idx    = torch.randperm(len(q_cpu))[:n_take]
+            self._q_buf.append(q_cpu[idx])
+        G_r         = H // r_gs                                                     # R group 개수
+        r_for_quant = r_flat.reshape(orig_shape[:-1] + (G_r, r_gs))                 # [..., G_r, r_gs]
+        max_abs_r   = r_for_quant.abs().amax(dim=-1, keepdim=True).clamp_min(eps)   # R group별 max|r|
+        scale_r     = max_abs_r / r_max_val                                         # tight scale (R 분포 기준)
+        r_q         = torch.round(r_for_quant / scale_r).clamp(r_min_val, r_max_val)# 정수 R 양자화
+        r_dq_grp    = r_q * scale_r                                                 # 역양자화 (group shape 유지)
+        r_dq        = r_dq_grp.reshape(orig_shape)                                  # [..., H]로 복원
+
+        # q_scaled도 원래 shape으로 복원해서 반환 (forward에서 matmul용)
+        q_scaled    = q_scaled_base.reshape(orig_shape)                             # [..., H]
+
+        # (q_scaled, r_dq) 튜플 반환 — forward에서 각각 matmul 후 합산
         return (
-            q_scaled.reshape_as(x_fp).to(x.dtype),
-            r_dq.reshape_as(x_fp).to(x.dtype),
+            q_scaled.to(x.dtype),
+            r_dq.to(x.dtype),
         )
 
     def forward(self, x):
@@ -406,7 +409,9 @@ def replace_modules_with_quotrem_linear(
     weight_group_size,
     q_bits,
     r_bits,
+    base_group_size,                    # base 결정 group (R group과 독립)
     r_group_size,
+    collect_residuals: bool = False,    # 추가: 분석 모드 플래그 (data 스크립트에서 True로 전달)
 ):
     replaced_names = []
 
@@ -424,7 +429,9 @@ def replace_modules_with_quotrem_linear(
                 weight_group_size=weight_group_size,
                 q_bits=q_bits,
                 r_bits=r_bits,
+                base_group_size=base_group_size,
                 r_group_size=r_group_size,
+                collect_residuals=collect_residuals,    # 추가
                 debug_name=f"layer{layer_idx}.{module_name}",
             )
 
@@ -556,6 +563,9 @@ def main():
     # QR bits
     parser.add_argument("--q_bits", type=int, default=4)
     parser.add_argument("--r_bits", type=int, default=4)
+    # base 결정 group (R group과 독립적으로 설정 가능, -1이면 per-tensor)
+    parser.add_argument("--base_group_size", type=int, default=128)
+    # R quantization group (-1이면 per-tensor)
     parser.add_argument("--r_group_size", type=int, default=128)
 
     # eval
@@ -588,6 +598,7 @@ def main():
     lines.append("[Adaptive QR]")
     lines.append(f"q_bits             : {args.q_bits}")
     lines.append(f"r_bits             : {args.r_bits}")
+    lines.append(f"base_group_size    : {args.base_group_size}")   # 추가
     lines.append(f"r_group_size       : {args.r_group_size}")
     lines.append("")
 
@@ -643,6 +654,7 @@ def main():
         weight_group_size=args.weight_group_size,
         q_bits=args.q_bits,
         r_bits=args.r_bits,
+        base_group_size=args.base_group_size,   # 추가
         r_group_size=args.r_group_size,
     )
 

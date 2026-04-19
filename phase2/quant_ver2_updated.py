@@ -249,7 +249,7 @@ class QuotRemLinear(nn.Module):
             # signed base: group 내 abs 최대 원소의 부호를 base에 흡수
             # Q ∈ {0,1}, 복원식: x = base_signed * Q + r (sign 의존 없음)
 #
-            q = (xg.abs() >= base / 2.0).float()
+            #q = (xg.abs() >= base / 2.0).float()
             #base_sign   = torch.sign(
             #    xg.gather(-1, xg.abs().argmax(dim=-1, keepdim=True))
             #)  # [..., G, 1]
