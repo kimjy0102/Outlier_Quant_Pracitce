@@ -1,6 +1,6 @@
 ### 이 파일은 run_grouped_ppl_test.py 기반의 코드를 가져와서 quant를 추가해 ppl 평가하는 코드
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 import argparse
 import random

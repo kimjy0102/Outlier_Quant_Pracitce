@@ -53,6 +53,11 @@ def resolve_axis(dim: int, axis: int) -> int:
     return axis
 
 
+def ceil_power_of_2(x: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
+    # R scale을 2의 승수로 올림해 clipping 추가 발생을 최대한 피함
+    return torch.pow(2.0, torch.ceil(torch.log2(x.clamp_min(eps))))
+
+
 # =========================================================
 # 1. Dataset / PPL Eval Input Loader
 # =========================================================
@@ -174,7 +179,6 @@ class QuotRemLinear(nn.Module):
         self._r_buf: list        = []                 # R 값 누적 버퍼 (분석 모드에서만 채워짐)
         self._q_buf: list        = []                 # Q 값 누적 버퍼 (분석 모드에서만 채워짐)
         self._base_buf: list     = []                 # base 값 누적 버퍼 (분석 모드에서만 채워짐)
-        self._base_group_buf: list = []               # 분석용: base group별 [base, Q=1 count, Q=0 count, Q=1 fraction]
         self._max_r_samples: int = 100_000            # 버퍼 최대 원소 수 (메모리 방지)
 
         if enable_weight_quant:
@@ -245,8 +249,16 @@ class QuotRemLinear(nn.Module):
             dist_floor = torch.abs(max_abs - base_floor)                            # max_abs와 floor 후보의 거리
             dist_ceil  = torch.abs(base_ceil  - max_abs)                            # max_abs와 ceil 후보의 거리
             base = torch.where(dist_floor <= dist_ceil, base_floor, base_ceil)      # 더 가까운 후보 선택 (nearest)
-            base = base.clamp(min=2**(-4), max=128.0)                                    # base 값 범위를 {1,2,...,128}로 제한
-            
+            base = base.clamp(min=1.0, max=128.0)                                    # base 값 범위를 {1,2,...,128}로 제한
+
+            # 분석 모드: 선택된 base 값들을 버퍼에 subsampling하여 저장 (per-group → flatten)
+            if self.collect_residuals and len(self._base_buf) < self._max_r_samples:
+                base_cpu = base.detach().float().cpu().flatten()                     # [..., G_base, 1] → 1-D
+                remain   = self._max_r_samples - len(self._base_buf)                # 버퍼 잔여 슬롯
+                n_take   = min(len(base_cpu), remain, 10_000)                       # 한 번에 최대 10000개
+                idx      = torch.randperm(len(base_cpu))[:n_take]                  # 랜덤 subsampling
+                self._base_buf.append(base_cpu[idx])                               # 버퍼에 추가
+
             # --- sign-aware: group 내 max_abs가 양수/음수 어느 쪽에서 왔는지 판단 ---
             max_pos_val = xg_base.amax(dim=-1, keepdim=True)                        # group 내 최대값 (signed, 양수 쪽 대표)
             min_val     = xg_base.amin(dim=-1, keepdim=True)                        # group 내 최솟값 (signed, 음수 쪽 대표)
@@ -257,29 +269,6 @@ class QuotRemLinear(nn.Module):
             # xg * sign_flag >= base/2 : 양수 outlier면 기존과 동일, 음수 outlier면 xg <= -base/2 와 동치
             q = (xg_base * sign_flag >= base / 2.0).float()                        # 해당 방향의 큰 값만 q=1
             r = xg_base - sign_flag * base * q                                     # r = x - sign*base*q
-
-            # 분석 모드: base group 단위로 base와 group 내부 Q=1/Q=0 개수를 같은 index에서 저장
-            group_buf_n = sum(t.shape[0] for t in self._base_group_buf)
-            if self.collect_residuals and group_buf_n < self._max_r_samples:
-                base_cpu    = base.detach().float().cpu().flatten()                 # [..., G_base, 1] → group별 base
-                q1_count_cpu = (q == 1).sum(dim=-1).detach().float().cpu().flatten() # [..., G_base] → group별 Q=1 개수
-                q0_count_cpu = float(base_gs) - q1_count_cpu                        # group별 Q=0 개수
-                q1_frac_cpu  = q1_count_cpu / float(base_gs)                        # group 내부 Q=1 비율
-                remain       = self._max_r_samples - group_buf_n
-                n_take       = min(len(base_cpu), remain, 10_000)
-                idx          = torch.randperm(len(base_cpu))[:n_take]
-                group_stats  = torch.stack(
-                    [base_cpu[idx], q1_count_cpu[idx], q0_count_cpu[idx], q1_frac_cpu[idx]], dim=1
-                )
-                self._base_group_buf.append(group_stats)
-
-            # 분석 모드: 선택된 base 값들을 버퍼에 subsampling하여 저장 (per-group → flatten)
-            if self.collect_residuals and len(self._base_buf) < self._max_r_samples:
-                base_cpu = base.detach().float().cpu().flatten()                     # [..., G_base, 1] → 1-D
-                remain   = self._max_r_samples - len(self._base_buf)                # 버퍼 잔여 슬롯
-                n_take   = min(len(base_cpu), remain, 10_000)                       # 한 번에 최대 10000개
-                idx      = torch.randperm(len(base_cpu))[:n_take]                  # 랜덤 subsampling
-                self._base_buf.append(base_cpu[idx])                               # 버퍼에 추가
 
         else:
             sign_flag = 1.0                                                         # q_bits>=2: q 자체가 signed이므로 sign_flag 불필요
@@ -321,8 +310,10 @@ class QuotRemLinear(nn.Module):
         G_r         = H // r_gs                                                     # R group 개수
         r_for_quant = r_flat.reshape(orig_shape[:-1] + (G_r, r_gs))                 # [..., G_r, r_gs]
         max_abs_r   = r_for_quant.abs().amax(dim=-1, keepdim=True).clamp_min(eps)   # R group별 max|r|
-        scale_r     = max_abs_r / r_max_val                                         # tight scale (R 분포 기준)
-        r_q         = torch.round(r_for_quant / scale_r).clamp(r_min_val, r_max_val)# 정수 R 양자화
+        exact_scale_r = max_abs_r / r_max_val                                       # tight scale (R 분포 기준)
+        scale_r       = ceil_power_of_2(exact_scale_r, eps)                         # HW-friendly: 2의 승수 scale로 올림
+        # pow2 scale로 양자화/역양자화를 동일하게 맞춰야 공정한 PPL 비교가 됨
+        r_q         = torch.round(r_for_quant / scale_r).clamp(r_min_val, r_max_val)      # 정수 R 양자화
         r_dq_grp    = r_q * scale_r                                                 # 역양자화 (group shape 유지)
         r_dq        = r_dq_grp.reshape(orig_shape)                                  # [..., H]로 복원
 
@@ -557,7 +548,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model_id", type=str, default="facebook/opt-6.7b")
-    parser.add_argument("--output_dir", type=str, default="quotrem_ppl_results_v2")
+    parser.add_argument("--output_dir", type=str, default="quotrem_ppl_results_v2_pow2scale")
     parser.add_argument("--seed", type=int, default=42)
 
     # 적용 범위
@@ -616,6 +607,7 @@ def main():
     lines.append(f"r_bits             : {args.r_bits}")
     lines.append(f"base_group_size    : {args.base_group_size}")   # 추가
     lines.append(f"r_group_size       : {args.r_group_size}")
+    lines.append("r_scale_mode       : pow2_ceil_dynamic")
     lines.append("")
 
     print("[1] Loading WikiText2 + tokenizer...")
@@ -658,7 +650,7 @@ def main():
     lines.append("")
 
     # Replace modules
-    print("[5] Replacing modules with QuotRemLinear (adaptive base)...")
+    print("[5] Replacing modules with QuotRemLinear (adaptive base, pow2 r scale)...")
     replaced_names = replace_modules_with_quotrem_linear(
         model=model,
         layer_indices=target_layer_indices,

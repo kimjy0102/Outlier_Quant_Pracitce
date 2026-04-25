@@ -5,10 +5,10 @@
 # =================================================================
 Q_BITS=1                # Q(몫) 비트 수
 R_BITS=3                # R(나머지) 비트 수
-BASE_GROUP_SIZE=16      # base 결정 group 크기 (-1 이면 per-token)
-R_GROUP_SIZE=16         # R 양자화 group 크기 (-1 이면 per-token)
+BASE_GROUP_SIZE=128      # base 결정 group 크기 (-1 이면 per-token)
+R_GROUP_SIZE=128         # R 양자화 group 크기 (-1 이면 per-token)
 WEIGHT_BITS=4           # Weight 비트 수
-WEIGHT_GROUP_SIZE=16    # Weight quant group 크기
+WEIGHT_GROUP_SIZE=128    # Weight quant group 크기
 REPLACE_SCOPE="all"
 N_BATCHES=10            # R 수집용 forward pass 횟수
 N_BINS=100              # 히스토그램 bin 수

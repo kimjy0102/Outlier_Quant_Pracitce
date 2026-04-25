@@ -23,7 +23,8 @@ python smoothquant_ppl_test.py \
     --calib_seqlen ${CALIB_SEQLEN} \
     --enable_weight_quant \
     --weight_bits ${WEIGHT_BITS} \
-    --weight_quant_mode "tensor" \
+    --weight_quant_mode "group" \
+    --weight_group_size 16 \
     --enable_act_quant \
     --act_bits ${ACT_BITS} \
     --act_quant_mode ${ACT_MODE} \

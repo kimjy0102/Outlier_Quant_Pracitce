@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 # SmoothQuant 아이디어를 OPT-6.7b 에 적용해 PPL 측정
 # smooth.py 원본 충실히 이식:

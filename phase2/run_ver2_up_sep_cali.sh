@@ -4,11 +4,11 @@
 # 파라미터 설정
 # =================================================================
 Q_BITS=1                # Q(몫) 비트 수
-R_BITS=3                # R(나머지) 비트 수
-BASE_GROUP_SIZE=16      # base(나눌 값) 결정 group 크기 (-1이면 per-tensor)
-R_GROUP_SIZE=16         # R 양자화 group 크기 (-1이면 per-tensor)
+R_BITS=4                # R(나머지) 비트 수
+BASE_GROUP_SIZE=128      # base(나눌 값) 결정 group 크기 (-1이면 per-tensor)
+R_GROUP_SIZE=128         # R 양자화 group 크기 (-1이면 per-tensor)
 WEIGHT_BITS=4           # Weight 비트 수
-WEIGHT_GROUP_SIZE=16    # Weight quant group 크기
+WEIGHT_GROUP_SIZE=128    # Weight quant group 크기
 REPLACE_SCOPE="all"
 N_CALIB_SAMPLES=128     # 캘리브레이션 샘플 수
 CALIB_SEQLEN=2048       # 캘리브레이션 시퀀스 길이

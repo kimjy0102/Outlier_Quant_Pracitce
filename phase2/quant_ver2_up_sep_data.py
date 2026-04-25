@@ -112,23 +112,29 @@ def compute_q_stats(values: torch.Tensor) -> dict:
 
 
 # =========================================================
-# 4-3. Base 통계 계산 ({2,4,8,16,32,64,128} 각각의 count/fraction)
+# 4-3. Base 통계 계산 (실제로 관측된 base 값을 전부 count/fraction으로 출력)
 # =========================================================
 def compute_base_stats(values: torch.Tensor) -> dict:
-    v          = values.float()
-    total      = len(v)                                             # 전체 base 샘플 수 (per-group 단위)
-    candidates = [2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0]        # 가능한 base 값 목록
+    v      = values.float()
+    total  = len(v)                                                 # 전체 base 샘플 수 (per-group 단위)
+    unique = sorted(v.unique().tolist())                            # 실제 관측된 base 값 전체
     counts = {}
     fracs  = {}
-    for b in candidates:
+    for b in unique:
         cnt        = (v == b).sum().item()                          # 해당 base가 선택된 횟수
         counts[b]  = cnt
         fracs[b]   = cnt / total if total > 0 else 0.0             # 비율
     return {
         "n"      : total,
-        "counts" : counts,   # {2.0: 개수, 4.0: 개수, ...}
-        "fracs"  : fracs,    # {2.0: 비율, 4.0: 비율, ...}
+        "counts" : counts,   # {base값: 개수}
+        "fracs"  : fracs,    # {base값: 비율}
     }
+
+
+def format_base_value(value: float) -> str:
+    if float(value).is_integer() and value >= 1.0:
+        return f"{int(value):3d}"
+    return f"{value:.6g}"
 
 
 def print_base_stats(name: str, stats: dict):
@@ -138,7 +144,7 @@ def print_base_stats(name: str, stats: dict):
     for b in sorted(stats["counts"].keys()):
         cnt  = stats["counts"][b]
         frac = stats["fracs"][b]
-        print(f"  base={int(b):3d}  : {cnt:>10,}  ({frac*100:.2f}%)")
+        print(f"  base={format_base_value(b):>8s}  : {cnt:>10,}  ({frac*100:.2f}%)")
 
 
 def base_stats_to_lines(name: str, stats: dict) -> list:
@@ -146,9 +152,134 @@ def base_stats_to_lines(name: str, stats: dict) -> list:
     for b in sorted(stats["counts"].keys()):
         cnt  = stats["counts"][b]
         frac = stats["fracs"][b]
-        lines.append(f"  base={int(b):3d}  : {cnt:>10,}  ({frac*100:.2f}%)")
+        lines.append(f"  base={format_base_value(b):>8s}  : {cnt:>10,}  ({frac*100:.2f}%)")
     lines.append("")
     return lines
+
+
+# =========================================================
+# 4-4. Base group별 Q=1 비율 통계 계산
+# group_values columns: [base, q1_count, q0_count, q1_fraction]
+# =========================================================
+def compute_base_group_q1_stats(group_values: torch.Tensor) -> dict:
+    v        = group_values.float()
+    base     = v[:, 0]
+    q1_count = v[:, 1]
+    q0_count = v[:, 2]
+    q1_frac  = v[:, 3]
+    percs    = [0, 1, 5, 10, 25, 50, 75, 90, 95, 99, 100]
+    pvals    = torch.quantile(q1_frac, torch.tensor(percs, dtype=torch.float32) / 100.0).tolist()
+
+    count_unique = sorted(q1_count.unique().tolist())
+    q1_count_counts = {int(c): (q1_count == c).sum().item() for c in count_unique}
+
+    by_base = {}
+    for b in sorted(base.unique().tolist()):
+        mask = base == b
+        frac_b = q1_frac[mask]
+        q1_count_b = q1_count[mask]
+        q0_count_b = q0_count[mask]
+        count_pairs = []
+        for c in sorted(q1_count_b.unique().tolist()):
+            count_mask = q1_count_b == c
+            n_groups = int(count_mask.sum().item())
+            q0_value = int(q0_count_b[count_mask][0].item())
+            count_pairs.append((int(c), q0_value, n_groups, n_groups / int(mask.sum().item())))
+        by_base[b] = {
+            "n_groups"       : int(mask.sum().item()),
+            "q1_frac_mean"   : frac_b.mean().item(),
+            "q1_frac_p50"    : torch.quantile(frac_b, 0.50).item(),
+            "q1_frac_p90"    : torch.quantile(frac_b, 0.90).item(),
+            "q1_frac_max"    : frac_b.max().item(),
+            "frac_no_q1"     : (frac_b == 0).float().mean().item(),
+            "count_pairs"    : count_pairs,
+        }
+
+    return {
+        "n_groups"        : len(v),
+        "q1_count_mean"   : q1_count.mean().item(),
+        "q1_count_max"    : q1_count.max().item(),
+        "q1_frac_mean"    : q1_frac.mean().item(),
+        "frac_groups_q1_0": (q1_count == 0).float().mean().item(),
+        "frac_groups_q1_1p": (q1_count > 0).float().mean().item(),
+        "q1_frac_percentiles": dict(zip(percs, pvals)),
+        "q1_count_counts" : q1_count_counts,
+        "by_base"         : by_base,
+    }
+
+
+def print_base_group_q1_stats(name: str, stats: dict):
+    print(f"\n{'='*60}")
+    print(f"[{name}] Base-group Q=1 ratio")
+    print(f"  total groups        : {stats['n_groups']:,}")
+    print(f"  mean Q=1 count/group: {stats['q1_count_mean']:.4f}")
+    print(f"  max  Q=1 count/group: {stats['q1_count_max']:.0f}")
+    print(f"  mean Q=1 frac/group : {stats['q1_frac_mean']:.6f}")
+    print(f"  groups with no Q=1  : {stats['frac_groups_q1_0']:.4f}")
+    print(f"  groups with any Q=1 : {stats['frac_groups_q1_1p']:.4f}")
+    print("  Q=1 fraction percentiles:")
+    for p, v in stats["q1_frac_percentiles"].items():
+        print(f"    p{p:3d}              : {v:.6f}")
+    print("  by base:")
+    for b, row in stats["by_base"].items():
+        print(
+            f"    base={format_base_value(b):>8s}  groups={row['n_groups']:>8,}  "
+            f"mean={row['q1_frac_mean']:.6f}  p50={row['q1_frac_p50']:.6f}  "
+            f"p90={row['q1_frac_p90']:.6f}  max={row['q1_frac_max']:.6f}  "
+            f"no_q1={row['frac_no_q1']:.4f}"
+        )
+        for q1_cnt, q0_cnt, n_groups, frac in row["count_pairs"]:
+            print(
+                f"      Q1={q1_cnt:4d}, Q0={q0_cnt:4d} : "
+                f"{n_groups:>8,} groups ({frac*100:.2f}%)"
+            )
+
+
+def base_group_q1_stats_to_lines(name: str, stats: dict) -> list:
+    lines = [
+        f"[{name}] Base-group Q=1 ratio",
+        f"  total groups          : {stats['n_groups']:,}",
+        f"  mean Q=1 count/group  : {stats['q1_count_mean']:.4f}",
+        f"  max  Q=1 count/group  : {stats['q1_count_max']:.0f}",
+        f"  mean Q=1 frac/group   : {stats['q1_frac_mean']:.6f}",
+        f"  groups with no Q=1    : {stats['frac_groups_q1_0']:.4f}",
+        f"  groups with any Q=1   : {stats['frac_groups_q1_1p']:.4f}",
+        "  Q=1 fraction percentiles:",
+    ]
+    for p, v in stats["q1_frac_percentiles"].items():
+        lines.append(f"    p{p:3d}                : {v:.6f}")
+    lines.append("  Q=1 count per group distribution:")
+    for cnt, n in stats["q1_count_counts"].items():
+        lines.append(f"    q1_count={cnt:4d}      : {n:>10,}  ({n / stats['n_groups'] * 100:.2f}%)")
+    lines.append("  by base:")
+    for b, row in stats["by_base"].items():
+        lines.append(
+            f"    base={format_base_value(b):>8s}  groups={row['n_groups']:>8,}  "
+            f"mean={row['q1_frac_mean']:.6f}  p50={row['q1_frac_p50']:.6f}  "
+            f"p90={row['q1_frac_p90']:.6f}  max={row['q1_frac_max']:.6f}  "
+            f"no_q1={row['frac_no_q1']:.4f}"
+        )
+        for q1_cnt, q0_cnt, n_groups, frac in row["count_pairs"]:
+            lines.append(
+                f"      Q1={q1_cnt:4d}, Q0={q0_cnt:4d} : "
+                f"{n_groups:>8,} groups ({frac*100:.2f}%)"
+            )
+    lines.append("")
+    return lines
+
+
+def save_base_group_csv(group_values: torch.Tensor, save_path: str):
+    arr = group_values.float().cpu().numpy()
+    header = "group_sample_idx,base,q1_count,q0_count,q1_fraction"
+    rows = np.column_stack([np.arange(arr.shape[0]), arr])
+    np.savetxt(
+        save_path,
+        rows,
+        delimiter=",",
+        header=header,
+        comments="",
+        fmt=["%d", "%.8g", "%.0f", "%.0f", "%.8f"],
+    )
 
 
 def print_q_stats(name: str, stats: dict):
@@ -370,12 +501,24 @@ def main():
             print_q_stats(name, q_stats)                                   # Q 통계 콘솔 출력
             stat_lines.extend(q_stats_to_lines(name, q_stats))            # Q 통계 파일 저장용
 
-        # Base 통계 (선택된 base 값 분포: {2,4,8,16,32,64,128})
+        # Base 통계 (실제로 관측된 base 값 전체)
         if module._base_buf:
             base_vals  = torch.cat(module._base_buf)                       # base 버퍼 합산
             base_stats = compute_base_stats(base_vals)
             print_base_stats(name, base_stats)                             # base 통계 콘솔 출력
             stat_lines.extend(base_stats_to_lines(name, base_stats))      # base 통계 파일 저장용
+
+        # Base group별 상세 통계: 각 group의 base와 그 group 안에서 Q=1인 비율을 함께 저장
+        if hasattr(module, "_base_group_buf") and module._base_group_buf:
+            group_vals  = torch.cat(module._base_group_buf)                # columns: [base, q1_count, q0_count, q1_fraction]
+            group_stats = compute_base_group_q1_stats(group_vals)
+            print_base_group_q1_stats(name, group_stats)
+            stat_lines.extend(base_group_q1_stats_to_lines(name, group_stats))
+
+            safe_name = name.replace(".", "_").replace("/", "_")
+            csv_path = str(Path(args.output_dir) / f"base_group_q1_{safe_name}.csv")
+            save_base_group_csv(group_vals, csv_path)
+            print(f"  → {csv_path}")
 
         # 레이어별 히스토그램 저장
         safe_name = name.replace(".", "_").replace("/", "_")               # 파일명 안전하게 변환

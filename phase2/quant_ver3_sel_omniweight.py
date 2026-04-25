@@ -1,10 +1,7 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
-# ver 2 + q distribution 수집 + 코드 정리
-# base가 2의 승수 -> CIM SHIFT 연산 간단화는 간단하지만, PPL 살짝 손해 값 선택 범위는 (2,~64)
-# R scale은 자기만의 타이트하게 결정, 몫은 분포 출력은 x 
-# updated 버전에서 추가: 나눌 base 값을 정하는 group과 residual을 정하는 group을 분리 시도\
-# base와 group 분리 및 음수 base 도 가능하게 하고 q 결정 조건 추가 (현재 best)
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+# OmniQuant W4A16g128로 저장된 weight를 불러오고, weight를 다시 fake quant하지 않은 상태에서
+# selective activation QR만 적용하는 standalone variant.
 import argparse
 import random
 from pathlib import Path
@@ -82,6 +79,8 @@ def fake_quant_symmetric(
     mode: str = "tensor",
     ch_axis: int = -1,
     group_size: int = None,
+    scale_method: str = "max",
+    scale_shrink_factors = None,
     eps: float = 1e-8,
 ):
     if n_bits < 2:
@@ -90,6 +89,8 @@ def fake_quant_symmetric(
     qmax = (2 ** (n_bits - 1)) - 1
     qmin = -qmax - 1
     x_fp = x.float()
+    if scale_shrink_factors is None:
+        scale_shrink_factors = [1.0, 0.95, 0.9, 0.85, 0.8]
 
     if mode == "tensor":
         max_abs = x_fp.abs().max()
@@ -117,6 +118,20 @@ def fake_quant_symmetric(
         xg = x_fp.reshape(new_shape)
         max_abs = xg.abs().amax(dim=-1, keepdim=True)
         scale = (max_abs / qmax).clamp_min(eps)
+        if scale_method == "mse":
+            best_scale = scale
+            best_err = torch.full_like(max_abs, float("inf"))
+            for shrink in scale_shrink_factors:
+                cand_scale = (scale * float(shrink)).clamp_min(eps)
+                q = torch.round(xg / cand_scale).clamp(qmin, qmax)
+                dq = q * cand_scale
+                err = (xg - dq).pow(2).mean(dim=-1, keepdim=True)
+                choose = err < best_err
+                best_err = torch.where(choose, err, best_err)
+                best_scale = torch.where(choose, cand_scale, best_scale)
+            scale = best_scale
+        elif scale_method != "max":
+            raise ValueError(f"Unsupported scale_method: {scale_method}")
         q = torch.round(xg / scale).clamp(qmin, qmax)
         dq = q * scale
         return dq.reshape_as(x_fp).to(x.dtype)
@@ -150,10 +165,15 @@ class QuotRemLinear(nn.Module):
         weight_quant_mode: str = "group",
         weight_ch_axis: int = 0,
         weight_group_size: int = 128,
+        weight_scale_method: str = "max",
+        weight_scale_shrink_factors = None,
         q_bits: int = 4,
         r_bits: int = 4,
         base_group_size: int = 128,        # 추가: base(나눌 값)를 결정할 group 크기 (-1이면 per-tensor)
         r_group_size: int = 128,           # R quantization을 위한 group 크기 (-1이면 per-tensor)
+        selective_base_threshold: float = 1.0,
+        selective_int_bits: int = 4,
+        residual_clip_alpha: float = 0.0,
         collect_residuals: bool = False,   # 분석용: True이면 R 값을 _r_buf에 수집
         debug_name: str = "",
     ):
@@ -170,6 +190,11 @@ class QuotRemLinear(nn.Module):
         self.r_bits              = r_bits
         self.base_group_size     = base_group_size    # base 결정 group (R group과 독립)
         self.r_group_size        = r_group_size       # R quant group
+        if selective_int_bits < 2:
+            raise ValueError(f"selective_int_bits must be >= 2, got {selective_int_bits}")
+        self.selective_base_threshold = selective_base_threshold  # base가 이 값보다 작으면 QR 대신 INT fallback
+        self.selective_int_bits       = selective_int_bits        # fallback group에서 사용할 activation INT bit
+        self.residual_clip_alpha      = residual_clip_alpha       # >0이면 R scale을 alpha*base로 제한
         self.collect_residuals   = collect_residuals  # 분석 모드 플래그
         self._r_buf: list        = []                 # R 값 누적 버퍼 (분석 모드에서만 채워짐)
         self._q_buf: list        = []                 # Q 값 누적 버퍼 (분석 모드에서만 채워짐)
@@ -184,6 +209,8 @@ class QuotRemLinear(nn.Module):
                 mode=weight_quant_mode,
                 ch_axis=weight_ch_axis,
                 group_size=weight_group_size,
+                scale_method=weight_scale_method,
+                scale_shrink_factors=weight_scale_shrink_factors,
             )
             self.weight = nn.Parameter(w_q, requires_grad=False)
         else:
@@ -296,6 +323,14 @@ class QuotRemLinear(nn.Module):
             q = torch.round(xg_base / base).clamp(-q_max_val, q_max_val)            # 정수 Q 양자화
             r = xg_base - base * q                                                  # 잔여 R
 
+        # selective fallback: base가 작은 group은 QR 분해 대신 x 자체를 INT4 fake-quant로 표현
+        selective_mask = base < self.selective_base_threshold                        # [..., G_base, 1]
+        int_qmax_val   = (2 ** (self.selective_int_bits - 1)) - 1
+        int_qmin_val   = -int_qmax_val - 1
+        int_scale      = (max_abs / int_qmax_val).clamp_min(eps)
+        x_int_q        = torch.round(xg_base / int_scale).clamp(int_qmin_val, int_qmax_val)
+        x_int_dq       = x_int_q * int_scale                                         # [..., G_base, base_gs]
+
         # q_scaled: Q가 weight에 곱해질 때의 실질적 기여값 (= sign * Q * base)
         q_scaled_base = q * sign_flag * base                                        # [..., G_base, base_gs]
 
@@ -321,13 +356,32 @@ class QuotRemLinear(nn.Module):
         G_r         = H // r_gs                                                     # R group 개수
         r_for_quant = r_flat.reshape(orig_shape[:-1] + (G_r, r_gs))                 # [..., G_r, r_gs]
         max_abs_r   = r_for_quant.abs().amax(dim=-1, keepdim=True).clamp_min(eps)   # R group별 max|r|
-        scale_r     = max_abs_r / r_max_val                                         # tight scale (R 분포 기준)
-        r_q         = torch.round(r_for_quant / scale_r).clamp(r_min_val, r_max_val)# 정수 R 양자화
+        r_input      = r_for_quant
+        if self.residual_clip_alpha > 0:
+            # QR에서는 R이 base가 처리한 coarse unit의 잔여분이므로,
+            # 극소수 residual tail이 scale_r 전체를 키우지 못하게 alpha*base로 R 범위를 제한한다.
+            base_flat = base.expand_as(xg_base).reshape(orig_shape)                  # [..., H]
+            base_for_r = base_flat.reshape(orig_shape[:-1] + (G_r, r_gs))            # [..., G_r, r_gs]
+            clip_bound_elem = (float(self.residual_clip_alpha) * base_for_r).clamp_min(eps)
+            clip_bound_grp  = clip_bound_elem.amax(dim=-1, keepdim=True).clamp_min(eps)
+            max_abs_r       = torch.minimum(max_abs_r, clip_bound_grp).clamp_min(eps)
+            r_input         = torch.maximum(
+                torch.minimum(r_for_quant, clip_bound_elem),
+                -clip_bound_elem,
+            )
+        scale_r     = max_abs_r / r_max_val                                         # tight scale (R 분포 기준, 선택적으로 base-bound)
+        r_q         = torch.round(r_input / scale_r).clamp(r_min_val, r_max_val)     # 정수 R 양자화
         r_dq_grp    = r_q * scale_r                                                 # 역양자화 (group shape 유지)
         r_dq        = r_dq_grp.reshape(orig_shape)                                  # [..., H]로 복원
 
         # q_scaled도 원래 shape으로 복원해서 반환 (forward에서 matmul용)
         q_scaled    = q_scaled_base.reshape(orig_shape)                             # [..., H]
+
+        # selective fallback group은 q path를 끄고, r path에 INT4(x)를 직접 넣는다.
+        selective_flat = selective_mask.expand_as(xg_base).reshape(orig_shape)
+        x_int_dq_flat  = x_int_dq.reshape(orig_shape)
+        q_scaled       = torch.where(selective_flat, torch.zeros_like(q_scaled), q_scaled)
+        r_dq           = torch.where(selective_flat, x_int_dq_flat, r_dq)
 
         # (q_scaled, r_dq) 튜플 반환 — forward에서 각각 matmul 후 합산
         return (
@@ -397,6 +451,39 @@ def parse_module_names(s: str):
     return names
 
 
+def parse_float_list(s: str):
+    return [float(x.strip()) for x in s.split(",") if len(x.strip()) > 0]
+
+
+def parse_module_float_map(s: str):
+    if s is None or len(s.strip()) == 0:
+        return {}
+    valid = {
+        "self_attn.q_proj",
+        "self_attn.k_proj",
+        "self_attn.v_proj",
+        "self_attn.out_proj",
+        "fc1",
+        "fc2",
+    }
+    parsed = {}
+    for item in s.split(","):
+        item = item.strip()
+        if len(item) == 0:
+            continue
+        if ":" not in item:
+            raise ValueError(
+                "--module_selective_base_thresholds must use module:value format, "
+                f"got '{item}'"
+            )
+        module_name, value = item.split(":", 1)
+        module_name = module_name.strip()
+        if module_name not in valid:
+            raise ValueError(f"Invalid module name in module threshold map: {module_name}")
+        parsed[module_name] = float(value.strip())
+    return parsed
+
+
 def resolve_target_layers(model, replace_scope: str, one_layer_idx: int, custom_layer_indices: str = ""):
     num_layers = len(model.model.decoder.layers)
 
@@ -423,10 +510,16 @@ def replace_modules_with_quotrem_linear(
     weight_quant_mode,
     weight_ch_axis,
     weight_group_size,
+    weight_scale_method,
+    weight_scale_shrink_factors,
     q_bits,
     r_bits,
     base_group_size,                    # base 결정 group (R group과 독립)
     r_group_size,
+    selective_base_threshold,
+    module_selective_base_thresholds,
+    selective_int_bits,
+    residual_clip_alpha,
     collect_residuals: bool = False,    # 추가: 분석 모드 플래그 (data 스크립트에서 True로 전달)
 ):
     replaced_names = []
@@ -435,6 +528,12 @@ def replace_modules_with_quotrem_linear(
         layer = model.model.decoder.layers[layer_idx]
         for module_name in module_names:
             old_module = get_named_linear_module(layer, module_name)
+            # module-wise threshold가 지정된 경우 해당 module만 덮어쓰고,
+            # 지정되지 않은 module은 기존 전역 threshold를 그대로 사용한다.
+            module_threshold = module_selective_base_thresholds.get(
+                module_name,
+                selective_base_threshold,
+            )
 
             new_module = QuotRemLinear(
                 base_linear=old_module,
@@ -443,10 +542,15 @@ def replace_modules_with_quotrem_linear(
                 weight_quant_mode=weight_quant_mode,
                 weight_ch_axis=weight_ch_axis,
                 weight_group_size=weight_group_size,
+                weight_scale_method=weight_scale_method,
+                weight_scale_shrink_factors=weight_scale_shrink_factors,
                 q_bits=q_bits,
                 r_bits=r_bits,
                 base_group_size=base_group_size,
                 r_group_size=r_group_size,
+                selective_base_threshold=module_threshold,
+                selective_int_bits=selective_int_bits,
+                residual_clip_alpha=residual_clip_alpha,
                 collect_residuals=collect_residuals,    # 추가
                 debug_name=f"layer{layer_idx}.{module_name}",
             )
@@ -556,8 +660,10 @@ def compute_perplexity(model, testenc, dev):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--model_id", type=str, default="facebook/opt-6.7b")
-    parser.add_argument("--output_dir", type=str, default="quotrem_ppl_results_v2")
+    parser.add_argument("--model_id", type=str,
+                        default="/home2/juneyeop/OmniQuant/checkpoint/opt-6.7b-w4a16g128",
+                        help="OmniQuant W4A16g128 save_pretrained checkpoint path")
+    parser.add_argument("--output_dir", type=str, default="quotrem_ppl_results_v3_sel_omniweight")
     parser.add_argument("--seed", type=int, default=42)
 
     # 적용 범위
@@ -568,13 +674,18 @@ def main():
     parser.add_argument("--custom_layer_indices", type=str, default=None,
                         help="e.g. 0,2,4")
 
-    # weight quant
-    parser.add_argument("--enable_weight_quant", action="store_true")
+    # OmniQuant checkpoint already contains quantized-dequantized weights, so do not quantize weights again.
+    parser.add_argument("--enable_weight_quant", action="store_true",
+                        help="Deprecated in this file: ignored to avoid double-quantizing OmniQuant weights")
     parser.add_argument("--weight_bits", type=int, default=4)
     parser.add_argument("--weight_quant_mode", type=str, default="group",
                         choices=["tensor", "per_channel", "group"])
     parser.add_argument("--weight_ch_axis", type=int, default=0)
     parser.add_argument("--weight_group_size", type=int, default=128)
+    parser.add_argument("--weight_scale_method", type=str, default="max",
+                        choices=["max", "mse"])
+    parser.add_argument("--weight_scale_shrink_factors", type=str,
+                        default="1.0,0.95,0.9,0.85,0.8")
 
     # QR bits
     parser.add_argument("--q_bits", type=int, default=4)
@@ -583,6 +694,14 @@ def main():
     parser.add_argument("--base_group_size", type=int, default=128)
     # R quantization group (-1이면 per-tensor)
     parser.add_argument("--r_group_size", type=int, default=128)
+    parser.add_argument("--selective_base_threshold", type=float, default=1.0,
+                        help="base가 이 값보다 작은 group은 QR 대신 INT fallback 적용")
+    parser.add_argument("--module_selective_base_thresholds", type=str, default="",
+                        help="module별 threshold 덮어쓰기. 예: fc1:8,fc2:4,self_attn.v_proj:8")
+    parser.add_argument("--selective_int_bits", type=int, default=4,
+                        help="selective fallback group에서 사용할 activation INT bit")
+    parser.add_argument("--residual_clip_alpha", type=float, default=0.0,
+                        help=">0이면 R quant scale을 alpha*base로 cap하고 R을 clip. 0이면 기존 max_abs_r 방식")
 
     # eval
     parser.add_argument("--eval_split", type=str, default="test")
@@ -595,6 +714,9 @@ def main():
     ensure_dir(args.output_dir)
 
     module_names = parse_module_names(args.target_modules)
+    weight_scale_shrink_factors = parse_float_list(args.weight_scale_shrink_factors)
+    use_weight_quant = False
+    module_selective_base_thresholds = parse_module_float_map(args.module_selective_base_thresholds)
 
     lines = []
     lines.append("[Config]")
@@ -604,18 +726,26 @@ def main():
     lines.append(f"target_modules     : {module_names}")
     lines.append(f"eval_split         : {args.eval_split}")
     lines.append("")
-    lines.append("[Weight Quant]")
-    lines.append(f"enable_weight_quant: {args.enable_weight_quant}")
+    lines.append("[OmniQuant Weight]")
+    lines.append("source             : OmniQuant checkpoint loaded by --model_id")
+    lines.append("enable_weight_quant: False  # forced off to avoid double quantization")
+    lines.append(f"ignored_cli_enable_weight_quant: {args.enable_weight_quant}")
     lines.append(f"weight_bits        : {args.weight_bits}")
     lines.append(f"weight_quant_mode  : {args.weight_quant_mode}")
     lines.append(f"weight_ch_axis     : {args.weight_ch_axis}")
     lines.append(f"weight_group_size  : {args.weight_group_size}")
+    lines.append(f"weight_scale_method: {args.weight_scale_method}")
+    lines.append(f"weight_scale_shrink_factors: {weight_scale_shrink_factors}")
     lines.append("")
     lines.append("[Adaptive QR]")
     lines.append(f"q_bits             : {args.q_bits}")
     lines.append(f"r_bits             : {args.r_bits}")
     lines.append(f"base_group_size    : {args.base_group_size}")   # 추가
     lines.append(f"r_group_size       : {args.r_group_size}")
+    lines.append(f"selective_base_threshold : {args.selective_base_threshold}")
+    lines.append(f"module_selective_base_thresholds : {module_selective_base_thresholds}")
+    lines.append(f"selective_int_bits       : {args.selective_int_bits}")
+    lines.append(f"residual_clip_alpha      : {args.residual_clip_alpha}")
     lines.append("")
 
     print("[1] Loading WikiText2 + tokenizer...")
@@ -663,15 +793,21 @@ def main():
         model=model,
         layer_indices=target_layer_indices,
         module_names=module_names,
-        enable_weight_quant=args.enable_weight_quant,
+        enable_weight_quant=use_weight_quant,
         weight_bits=args.weight_bits,
         weight_quant_mode=args.weight_quant_mode,
         weight_ch_axis=args.weight_ch_axis,
         weight_group_size=args.weight_group_size,
+        weight_scale_method=args.weight_scale_method,
+        weight_scale_shrink_factors=weight_scale_shrink_factors,
         q_bits=args.q_bits,
         r_bits=args.r_bits,
         base_group_size=args.base_group_size,   # 추가
         r_group_size=args.r_group_size,
+        selective_base_threshold=args.selective_base_threshold,
+        module_selective_base_thresholds=module_selective_base_thresholds,
+        selective_int_bits=args.selective_int_bits,
+        residual_clip_alpha=args.residual_clip_alpha,
     )
 
     lines.append("[Replacement]")
