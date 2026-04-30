@@ -4,7 +4,7 @@
 # 파라미터 설정
 # =================================================================
 Q_BITS=1                # Q(몫) 비트 수
-R_BITS=4                # R(나머지) 비트 수
+R_BITS=3                # R(나머지) 비트 수
 BASE_GROUP_SIZE=128      # base(나눌 값) 결정 group 크기 (-1이면 per-tensor)
 R_GROUP_SIZE=128         # R 양자화 group 크기 (-1이면 per-tensor)
 WEIGHT_BITS=4           # Weight 비트 수

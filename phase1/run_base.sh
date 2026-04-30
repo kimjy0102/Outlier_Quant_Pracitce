@@ -3,8 +3,8 @@
 # =================================================================
 # 1. 파라미터 설정 (여기 숫자/문자만 바꿔가며 테스트하시면 됩니다!)
 # =================================================================
-ACT_BITS=4             # Activation 비트 수 (보통 8)
-WEIGHT_BITS=4          # Weight 비트 수 (보통 4 또는 8)
+ACT_BITS=8             # Activation 비트 수 (보통 8)
+WEIGHT_BITS=8          # Weight 비트 수 (보통 4 또는 8)
 ACT_MODE="group"       # Activation 양자화 모드 (tensor, per_token, group 중 택 1)
 WEIGHT_MODE="group"    # Weight 양자화 모드 (tensor, per_channel, group 중 택 1)
 ACT_GROUP_SIZE=128     # Activation 그룹 사이즈

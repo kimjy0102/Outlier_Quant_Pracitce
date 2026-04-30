@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 # OmniQuant W4A16g128로 저장된 weight를 불러오고, weight를 다시 fake quant하지 않은 상태에서
 # selective activation QR만 적용하는 standalone variant.
 import argparse
@@ -272,7 +272,7 @@ class QuotRemLinear(nn.Module):
             dist_floor = torch.abs(max_abs - base_floor)                            # max_abs와 floor 후보의 거리
             dist_ceil  = torch.abs(base_ceil  - max_abs)                            # max_abs와 ceil 후보의 거리
             base = torch.where(dist_floor <= dist_ceil, base_floor, base_ceil)      # 더 가까운 후보 선택 (nearest)
-            base = base.clamp(min=2**(-4), max=128.0)                                    # base 값 범위를 {1,2,...,128}로 제한
+            base = base.clamp(min=2**(-7), max=128.0)                                    # base 값 범위를 {1,2,...,128}로 제한
             
             # --- sign-aware: group 내 max_abs가 양수/음수 어느 쪽에서 왔는지 판단 ---
             max_pos_val = xg_base.amax(dim=-1, keepdim=True)                        # group 내 최대값 (signed, 양수 쪽 대표)
@@ -280,7 +280,7 @@ class QuotRemLinear(nn.Module):
             # 양수 쪽 abs >= 음수 쪽 abs이면 +1 (양수 outlier), 반대면 -1 (음수 outlier)
             sign_flag   = torch.where(max_pos_val.abs() >= min_val.abs(),
                                       torch.ones_like(max_pos_val),
-                                      -torch.ones_like(max_pos_val))               # shape: [..., G_base, 1]
+                                      -torch.ones_like(max_pos_val))                # shape: [..., G_base, 1]
             # xg * sign_flag >= base/2 : 양수 outlier면 기존과 동일, 음수 outlier면 xg <= -base/2 와 동치
             q = (xg_base * sign_flag >= base / 2.0).float()                        # 해당 방향의 큰 값만 q=1
             r = xg_base - sign_flag * base * q                                     # r = x - sign*base*q
@@ -661,7 +661,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--model_id", type=str,
-                        default="/home2/juneyeop/OmniQuant/checkpoint/opt-6.7b-w4a16g128",
+                        default="/home2/juneyeop/OmniQuant/checkpoint/opt-6.7b-w4a16g128", # Made by Me (only weight)
                         help="OmniQuant W4A16g128 save_pretrained checkpoint path")
     parser.add_argument("--output_dir", type=str, default="quotrem_ppl_results_v3_sel_omniweight")
     parser.add_argument("--seed", type=int, default=42)
