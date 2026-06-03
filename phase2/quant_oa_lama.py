@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "5,6,7")
 # OA-LAMA 방식 activation quantization을 ver2 환경에서 실행
 # - activation: exponent-based mixed 3-bit/4-bit (OA-LAMA quant.py 그대로)
 # - per-group dynamic scale + 첫 배치에서 global clamp 하한선 결정 (Quantizer.init 패턴)
@@ -11,6 +11,7 @@ import argparse
 import functools
 import math
 import random
+import sys
 from pathlib import Path
 from tqdm import tqdm
 import numpy as np
@@ -18,7 +19,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
+
+PHASE3_DIR = Path(__file__).resolve().parents[1] / "phase3"
+if str(PHASE3_DIR) not in sys.path:
+    sys.path.insert(0, str(PHASE3_DIR))
+
+from eval_utils import load_eval_tokens
+from model_configs import get_model_config, get_module_names
 
 
 # =========================================================
@@ -35,7 +43,38 @@ def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
 def get_model_main_device(model):
-    return model.model.decoder.embed_tokens.weight.device
+    if hasattr(model.model, "decoder"):
+        return model.model.decoder.embed_tokens.weight.device
+    return model.model.embed_tokens.weight.device
+
+
+def infer_arch_from_config(config):
+    model_type = getattr(config, "model_type", "")
+    if model_type == "opt":
+        return "opt"
+    if model_type in ("llama", "mistral"):
+        return "llama"
+    raise ValueError(f"지원하지 않는 model_type입니다: {model_type}")
+
+
+def get_decoder_layers(model, arch):
+    if arch == "opt":
+        return model.model.decoder.layers
+    if arch == "llama":
+        return model.model.layers
+    raise ValueError(f"Unknown arch: {arch}")
+
+
+def get_layer_name_prefix(arch):
+    if arch == "opt":
+        return "decoder.layers"
+    if arch == "llama":
+        return "layers"
+    raise ValueError(f"Unknown arch: {arch}")
+
+
+def get_model_seqlen(model):
+    return int(getattr(model.config, "max_position_embeddings", 2048))
 
 def save_txt(lines, path):
     with open(path, "w", encoding="utf-8") as f:
@@ -169,16 +208,16 @@ def oa_lama_quantize(x: torch.Tensor, scale: int, group_size: int, threshold: in
 @torch.no_grad()
 def get_act_stats_opt(model, dataloader, device, metric='hessian'):
     """
-    outlier.py get_act_stats_opt 충실히 이식.
-    모든 nn.Linear의 input/output에 hook을 등록하고
-    layer-by-layer로 calibration data를 통과시켜 per-channel 통계 수집.
+    outlier.py get_act_stats_opt 기반.
+    OPT-13B 이상에서는 device_map="auto"와 layer-by-layer replay가 충돌하므로,
+    전체 model forward에 hook을 걸어 per-channel 통계만 누적한다.
     """
     nsamples  = len(dataloader)
     act_scales = {}
 
     def stat_tensor(name, tensor):
         hidden_dim = tensor.shape[-1]
-        tensor = tensor.view(-1, hidden_dim).detach()
+        tensor = tensor.reshape(-1, hidden_dim).detach()
 
         if metric == 'hessian':
             tensorH        = math.sqrt(2 / nsamples) * tensor.float().t()
@@ -215,59 +254,16 @@ def get_act_stats_opt(model, dataloader, device, metric='hessian'):
                 )
             )
 
-    layers = model.model.decoder.layers
-    model.model.decoder.embed_tokens    = model.model.decoder.embed_tokens.to(device)
-    model.model.decoder.embed_positions = model.model.decoder.embed_positions.to(device)
-    layers[0] = layers[0].to(device)
-
-    dtype = next(iter(model.parameters())).dtype
-    inps  = torch.zeros(
-        (nsamples, model.seqlen, model.config.hidden_size), dtype=dtype, device=device
-    )
-    cache = {'i': 0, 'attention_mask': None}
-
-    class Catcher(nn.Module):
-        def __init__(self, module):
-            super().__init__()
-            self.module = module
-        def forward(self, inp, **kwargs):
-            inps[cache['i']] = inp.squeeze(0)
-            cache['i'] += 1
-            cache['attention_mask'] = kwargs['attention_mask']
-            raise ValueError
-
-    layers[0] = Catcher(layers[0])
-    for batch in dataloader:
-        try:
-            model(batch[0].to(device))
-        except ValueError:
-            pass
-    assert cache['i'] == nsamples, "Captured samples should be equal to nsamples"
-
-    layers[0] = layers[0].module
-    layers[0] = layers[0].cpu()
-    model.model.decoder.embed_tokens    = model.model.decoder.embed_tokens.cpu()
-    model.model.decoder.embed_positions = model.model.decoder.embed_positions.cpu()
-    if hasattr(model.model.decoder, 'project_out') and model.model.decoder.project_out:
-        model.model.decoder.project_out = model.model.decoder.project_out.cpu()
-    if hasattr(model.model.decoder, 'project_in') and model.model.decoder.project_in:
-        model.model.decoder.project_in = model.model.decoder.project_in.cpu()
-    torch.cuda.empty_cache()
-
-    outs            = torch.zeros_like(inps)
-    attention_mask  = cache['attention_mask']
-
-    for i in tqdm(range(len(layers)), desc="Collecting act stats"):
-        layer = layers[i].to(device)
-        for j in range(nsamples):
-            outs[j] = layer(inps[j].unsqueeze(0), attention_mask=attention_mask)[0]
-        layers[i] = layer.cpu()
-        del layer
+    use_cache = model.config.use_cache
+    model.config.use_cache = False
+    try:
+        for batch in tqdm(dataloader, desc="Collecting act stats"):
+            model.model(batch[0].to(device), use_cache=False)
+    finally:
+        model.config.use_cache = use_cache
+        for h in hooks:
+            h.remove()
         torch.cuda.empty_cache()
-        inps, outs = outs, inps
-
-    for h in hooks:
-        h.remove()
 
     return act_scales
 
@@ -297,19 +293,22 @@ def reorder_tensor(tensor: torch.Tensor, group_size: int):
     return sorted_index, threshold
 
 
-def compute_reorder_indices(act_scales, target_layer_indices, module_names, group_size):
+def compute_reorder_indices(act_scales, target_layer_indices, module_names, group_size, arch):
     """
     각 (layer_idx, module_name) 쌍의 input scale로부터 reorder_index, threshold 계산.
-    act_scales key 형식: "decoder.layers.{i}.{module_name}.input"
+    act_scales key 형식:
+      - OPT:   "decoder.layers.{i}.{module_name}.input"
+      - LLaMA: "layers.{i}.{module_name}.input"
 
     reorder_tensor의 threshold는 outlier 채널 수이자 곧 outlier 그룹 수.
     interleaving reorder 후 outlier 채널 1개가 각 그룹 마지막에 배치되므로
     outlier 채널 수 == outlier 그룹 수 → 변환 없이 그대로 사용. (outlier.py L222와 동일)
     """
     reorder_indices = {}
+    layer_prefix = get_layer_name_prefix(arch)
     for layer_idx in target_layer_indices:
         for module_name in module_names:
-            key = f"decoder.layers.{layer_idx}.{module_name}.input"
+            key = f"{layer_prefix}.{layer_idx}.{module_name}.input"
             if key not in act_scales:
                 print(f"  [Warning] key not found in act_scales: {key}")
                 continue
@@ -452,59 +451,57 @@ class OALAMALinear(nn.Module):
 # 5. Module Access / Replacement
 # =========================================================
 def get_named_linear_module(layer, module_name):
-    mapping = {
-        "self_attn.q_proj":   layer.self_attn.q_proj,
-        "self_attn.k_proj":   layer.self_attn.k_proj,
-        "self_attn.v_proj":   layer.self_attn.v_proj,
-        "self_attn.out_proj": layer.self_attn.out_proj,
-        "fc1": layer.fc1,
-        "fc2": layer.fc2,
-    }
-    if module_name not in mapping:
-        raise ValueError(f"Unsupported module_name: {module_name}")
-    return mapping[module_name]
+    parent = layer
+    parts = module_name.split(".")
+    for part in parts[:-1]:
+        parent = getattr(parent, part)
+    return getattr(parent, parts[-1])
 
 
 def set_named_linear_module(layer, module_name, new_module):
-    if   module_name == "self_attn.q_proj":   layer.self_attn.q_proj   = new_module
-    elif module_name == "self_attn.k_proj":   layer.self_attn.k_proj   = new_module
-    elif module_name == "self_attn.v_proj":   layer.self_attn.v_proj   = new_module
-    elif module_name == "self_attn.out_proj": layer.self_attn.out_proj = new_module
-    elif module_name == "fc1":                layer.fc1                = new_module
-    elif module_name == "fc2":                layer.fc2                = new_module
-    else: raise ValueError(f"Unsupported module_name: {module_name}")
+    parent = layer
+    parts = module_name.split(".")
+    for part in parts[:-1]:
+        parent = getattr(parent, part)
+    setattr(parent, parts[-1], new_module)
 
 
-def parse_module_names(s):
+def parse_module_names(s, arch):
+    valid = set(get_module_names(arch))
+    if s == "auto":
+        return list(get_module_names(arch))
     names = [x.strip() for x in s.split(",") if x.strip()]
-    valid = {"self_attn.q_proj","self_attn.k_proj","self_attn.v_proj",
-             "self_attn.out_proj","fc1","fc2"}
     for n in names:
         if n not in valid:
-            raise ValueError(f"Invalid module name: {n}")
+            raise ValueError(f"Invalid module name for arch={arch}: {n}. Valid: {sorted(valid)}")
     return names
 
 
-def resolve_target_layers(model, replace_scope, one_layer_idx, custom_layer_indices=""):
-    num_layers = len(model.model.decoder.layers)
+def resolve_target_layers(model, arch, replace_scope, one_layer_idx, custom_layer_indices=""):
+    num_layers = len(get_decoder_layers(model, arch))
     if replace_scope == "one":
+        if one_layer_idx < 0 or one_layer_idx >= num_layers:
+            raise ValueError(f"one_layer_idx must be in [0, {num_layers - 1}]")
         return [one_layer_idx]
     elif replace_scope == "all":
         return list(range(num_layers))
     elif replace_scope == "custom":
+        if not custom_layer_indices:
+            raise ValueError("--custom_layer_indices를 0,2,4 형식으로 입력해야 합니다.")
         return [int(i.strip()) for i in custom_layer_indices.split(",")]
     raise ValueError(f"Unsupported replace_scope: {replace_scope}")
 
 
 def replace_modules(
-    model, layer_indices, module_names,
+    model, arch, layer_indices, module_names,
     act_group_size, act_threshold,
     reorder_indices,                   # dict: (layer_idx, module_name) → (sorted_index, threshold)
     enable_weight_quant, weight_group_size,
 ):
     replaced = []
+    layers = get_decoder_layers(model, arch)
     for layer_idx in layer_indices:
-        layer = model.model.decoder.layers[layer_idx]
+        layer = layers[layer_idx]
         for module_name in module_names:
             old = get_named_linear_module(layer, module_name)
 
@@ -564,14 +561,15 @@ def compute_perplexity(model, testenc, dev):
 # =========================================================
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model_name",          type=str, default=None,
+                        help="phase3/model_configs.py의 alias 사용 (예: opt-6.7b, llama-7b)")
     parser.add_argument("--model_id",            type=str, default="facebook/opt-6.7b")
     parser.add_argument("--output_dir",           type=str, default="results_oa_lama")
     parser.add_argument("--seed",                 type=int, default=42)
     parser.add_argument("--replace_scope",        type=str, default="all",
                         choices=["one", "all", "custom"])
     parser.add_argument("--one_layer_idx",        type=int, default=10)
-    parser.add_argument("--target_modules",       type=str,
-                        default="self_attn.q_proj,self_attn.k_proj,self_attn.v_proj,self_attn.out_proj,fc1,fc2")
+    parser.add_argument("--target_modules",       type=str, default="auto")
     parser.add_argument("--custom_layer_indices", type=str, default=None)
     parser.add_argument("--act_group_size",       type=int, default=16)
     parser.add_argument("--act_threshold",        type=int, default=0,
@@ -589,16 +587,31 @@ def main():
     parser.add_argument("--enable_weight_quant",  action="store_true")
 
     parser.add_argument("--weight_group_size",    type=int, default=16)
+    parser.add_argument("--eval_dataset",         type=str, default="wikitext2",
+                        choices=["wikitext2", "c4", "c4_new", "c4_omni"])
     parser.add_argument("--eval_split",           type=str, default="test")
+    parser.add_argument("--eval_nsamples",        type=int, default=2048)
+    parser.add_argument("--c4_cache_dir",         type=str, default="/home/dataset/allenai_c4")
     args = parser.parse_args()
 
     set_seed(args.seed)
     ensure_dir(args.output_dir)
-    module_names = parse_module_names(args.target_modules)
+
+    registry_arch = None
+    if args.model_name is not None:
+        cfg = get_model_config(args.model_name)
+        args.model_id = cfg["hf_id"]
+        registry_arch = cfg["arch"]
+
+    config = AutoConfig.from_pretrained(args.model_id)
+    arch = registry_arch if registry_arch is not None else infer_arch_from_config(config)
+    module_names = parse_module_names(args.target_modules, arch)
 
     lines = [
         "[Config]",
+        f"model_name         : {args.model_name}",
         f"model_id           : {args.model_id}",
+        f"arch               : {arch}",
         f"replace_scope      : {args.replace_scope}",
         f"target_modules     : {module_names}",
         f"act_group_size     : {args.act_group_size}",
@@ -612,12 +625,15 @@ def main():
 
         f"weight_group_size  : {args.weight_group_size}",
         "",
+        "[Eval]",
+        f"eval_dataset       : {args.eval_dataset}",
+        f"eval_split         : {args.eval_split}",
+        f"eval_nsamples      : {args.eval_nsamples}",
+        f"c4_cache_dir       : {args.c4_cache_dir if args.eval_dataset != 'wikitext2' else ''}",
+        "",
     ]
 
-    print("[1] Loading data ...")
-    tokenizer, testenc = load_wikitext2_testenc(args.model_id, split=args.eval_split)
-
-    print("[2] Loading model ...")
+    print("[1] Loading model ...")
     model = AutoModelForCausalLM.from_pretrained(
         args.model_id,
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
@@ -625,11 +641,22 @@ def main():
         low_cpu_mem_usage=True,
     )
     model.eval()
-    model.seqlen = model.config.max_position_embeddings
+    model.seqlen = get_model_seqlen(model)
     dev = get_model_main_device(model)
 
+    print("[2] Loading data ...")
+    tokenizer, testenc = load_eval_tokens(
+        args.model_id,
+        dataset_name=args.eval_dataset,
+        split=args.eval_split,
+        seqlen=model.seqlen,
+        nsamples=args.eval_nsamples,
+        seed=args.seed,
+        c4_cache_dir=args.c4_cache_dir,
+    )
+
     target_layer_indices = resolve_target_layers(
-        model, args.replace_scope, args.one_layer_idx, args.custom_layer_indices)
+        model, arch, args.replace_scope, args.one_layer_idx, args.custom_layer_indices)
 
     print("[3] Baseline PPL ...")
     baseline_ppl = compute_perplexity(model, testenc, dev)
@@ -646,17 +673,17 @@ def main():
         print(f"[4b] Getting activation stats (metric={args.act_sort_metric}) ...")
         act_scales = get_act_stats_opt(model, calib_loader, dev, metric=args.act_sort_metric)
 
-        # calibration 후 model 을 device 로 복원
-        model.model.decoder.embed_tokens    = model.model.decoder.embed_tokens.to(dev)
-        model.model.decoder.embed_positions = model.model.decoder.embed_positions.to(dev)
-        for i in range(len(model.model.decoder.layers)):
-            model.model.decoder.layers[i] = model.model.decoder.layers[i].to(dev)
-
         print("[4c] Computing reorder indices ...")
         reorder_indices = compute_reorder_indices(
-            act_scales, target_layer_indices, module_names, args.act_group_size
+            act_scales, target_layer_indices, module_names, args.act_group_size, arch
         )
         thresholds = {k: v[1] for k, v in reorder_indices.items()}
+        if not thresholds:
+            raise RuntimeError(
+                f"reorder index를 하나도 만들지 못했습니다. "
+                f"arch={arch}, expected_prefix={get_layer_name_prefix(arch)}, "
+                f"target_modules={module_names}"
+            )
         n_outlier_layers = sum(1 for th in thresholds.values() if th > 0)
         th_values = sorted(thresholds.values())
         print(f"  → reorder indices computed for {len(reorder_indices)} modules, "
@@ -678,7 +705,7 @@ def main():
 
     print("[4] Replacing modules with OALAMALinear ...")
     replaced = replace_modules(
-        model, target_layer_indices, module_names,
+        model, arch, target_layer_indices, module_names,
         args.act_group_size, args.act_threshold,
         reorder_indices,
         args.enable_weight_quant, args.weight_group_size,

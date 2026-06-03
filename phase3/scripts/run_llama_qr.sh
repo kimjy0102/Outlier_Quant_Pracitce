@@ -1,15 +1,15 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-CUDA_VISIBLE_DEVICES=5,6,7
+CUDA_VISIBLE_DEVICES=4
 
-MODEL_NAME="llama-13b"
-MODEL_SOURCE="${MODEL_SOURCE:-fp16}" 
+MODEL_NAME="llama-7b"
+MODEL_SOURCE="${MODEL_SOURCE:-omni}"  # fp16 또는 omni
 Q_BITS=1
 R_BITS=3
 BASE_GROUP_SIZE=128
 R_GROUP_SIZE=128
-SELECTIVE_BASE_THRESHOLD=8.0
+SELECTIVE_BASE_THRESHOLD=4.0
 MODULE_SELECTIVE_BASE_THRESHOLDS=""   # Llama는 fc2 없음. 필요 시 mlp.down_proj:64 등으로 지정
 SELECTIVE_INT_BITS=4
 RESIDUAL_CLIP_ALPHA=0
@@ -63,5 +63,4 @@ CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} \
     --eval_nsamples ${EVAL_NSAMPLES} \
     --c4_cache_dir "${C4_CACHE_DIR}" \
     --seqlen 2048 \
-    --enable_weight_quant \
     "${BASELINE_ONLY_ARGS[@]}"

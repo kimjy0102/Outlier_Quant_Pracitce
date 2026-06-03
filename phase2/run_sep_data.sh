@@ -23,7 +23,7 @@ echo "Output: ${OUTPUT_DIR}"
 echo "======================================================"
 
 python quant_ver2_up_sep_data.py \
-    --model_id "facebook/opt-6.7b" \
+    --model_id "facebook/opt-13b" \
     --replace_scope ${REPLACE_SCOPE} \
     --target_modules "self_attn.q_proj,self_attn.k_proj,self_attn.v_proj,self_attn.out_proj,fc1,fc2" \
     --enable_weight_quant \

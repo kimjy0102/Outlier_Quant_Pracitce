@@ -1,0 +1,8 @@
+task,metric,score
+piqa,acc_norm,0.791621
+arc_easy,acc_norm,0.728535
+arc_challenge,acc_norm,0.447952
+boolq,acc,0.751070
+hellaswag,acc_norm,0.762000
+winogrande,acc,0.698500
+average,mixed,0.696613

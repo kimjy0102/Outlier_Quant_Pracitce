@@ -1,7 +1,7 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-CUDA_VISIBLE_DEVICES=5,6,7
+CUDA_VISIBLE_DEVICES=4
 
 MODEL_NAME="opt-6.7b"
 # 기본 실행은 논문 비교용 FP16 C4 baseline을 뽑는다.
@@ -11,7 +11,7 @@ Q_BITS=1
 R_BITS=3
 BASE_GROUP_SIZE=128
 R_GROUP_SIZE=128
-SELECTIVE_BASE_THRESHOLD=8.0
+SELECTIVE_BASE_THRESHOLD=129.0
 MODULE_SELECTIVE_BASE_THRESHOLDS=""
 SELECTIVE_INT_BITS=4
 RESIDUAL_CLIP_ALPHA=0
@@ -19,9 +19,9 @@ REPLACE_SCOPE="all"
 TARGET_MODULES="self_attn.q_proj,self_attn.k_proj,self_attn.v_proj,self_attn.out_proj,fc1,fc2"
 
 OUTPUT_DIR="${SCRIPT_DIR}/../results"
-EVAL_DATASET="${EVAL_DATASET:-c4_omni}"  # c4_omni, c4, c4_new, or wikitext2
-EVAL_SPLIT="${EVAL_SPLIT:-validation}" # c4는 validation, wikitext2는 test
-EVAL_NSAMPLES="${EVAL_NSAMPLES:-256}" # c4는 256, wikitext2는 2048 권장
+EVAL_DATASET="${EVAL_DATASET:-wikitext2}"  # c4_omni, c4, c4_new, or wikitext2
+EVAL_SPLIT="${EVAL_SPLIT:-test}" # c4는 validation, wikitext2는 test
+EVAL_NSAMPLES="${EVAL_NSAMPLES:-2048}" # c4는 256, wikitext2는 2048 권장
 C4_CACHE_DIR="${C4_CACHE_DIR:-${SCRIPT_DIR}/../cache}" # c4_omni는 writable cache가 필요하다.
 BASELINE_ONLY="${BASELINE_ONLY:-0}" # 1이면 baseline만 실행, 0이면 QR/OmniQuant 실행. QR/OmniQuant 실행 시 baseline도 같이 실행한다.
 BASELINE_ONLY_ARGS=()   # --baseline_only 플래그는 run_qr_ppl.py에 전달할 인자 배열. BASELINE_ONLY=1이면 --baseline_only 플래그를 전달해서 baseline만 실행한다. BASELINE_ONLY=0이면 빈 배열로 QR/OmniQuant 실행 시 baseline도 같이 실행한다.

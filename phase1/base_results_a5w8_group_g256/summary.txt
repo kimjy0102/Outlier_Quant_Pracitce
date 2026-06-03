@@ -1,0 +1,1191 @@
+[Config]
+model_id           : facebook/opt-6.7b
+replace_scope      : all
+one_layer_idx      : 10
+target_modules     : ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.out_proj', 'fc1', 'fc2']
+eval_split         : test
+
+[Experiment Switches]
+enable_grouping    : False
+linear_group_size  : 128
+enable_weight_quant: True
+weight_bits        : 8
+weight_quant_mode  : group
+weight_ch_axis     : 0
+weight_group_size  : 256
+enable_act_quant   : True
+act_bits           : 5
+act_quant_mode     : group
+act_ch_axis        : -1
+act_group_size     : 256
+quant_impl         : fake
+
+[Baseline]
+baseline_ppl : 10.86030483
+
+[Replacement]
+replaced_count : 192
+  - layer0.self_attn.q_proj
+  - layer0.self_attn.k_proj
+  - layer0.self_attn.v_proj
+  - layer0.self_attn.out_proj
+  - layer0.fc1
+  - layer0.fc2
+  - layer1.self_attn.q_proj
+  - layer1.self_attn.k_proj
+  - layer1.self_attn.v_proj
+  - layer1.self_attn.out_proj
+  - layer1.fc1
+  - layer1.fc2
+  - layer2.self_attn.q_proj
+  - layer2.self_attn.k_proj
+  - layer2.self_attn.v_proj
+  - layer2.self_attn.out_proj
+  - layer2.fc1
+  - layer2.fc2
+  - layer3.self_attn.q_proj
+  - layer3.self_attn.k_proj
+  - layer3.self_attn.v_proj
+  - layer3.self_attn.out_proj
+  - layer3.fc1
+  - layer3.fc2
+  - layer4.self_attn.q_proj
+  - layer4.self_attn.k_proj
+  - layer4.self_attn.v_proj
+  - layer4.self_attn.out_proj
+  - layer4.fc1
+  - layer4.fc2
+  - layer5.self_attn.q_proj
+  - layer5.self_attn.k_proj
+  - layer5.self_attn.v_proj
+  - layer5.self_attn.out_proj
+  - layer5.fc1
+  - layer5.fc2
+  - layer6.self_attn.q_proj
+  - layer6.self_attn.k_proj
+  - layer6.self_attn.v_proj
+  - layer6.self_attn.out_proj
+  - layer6.fc1
+  - layer6.fc2
+  - layer7.self_attn.q_proj
+  - layer7.self_attn.k_proj
+  - layer7.self_attn.v_proj
+  - layer7.self_attn.out_proj
+  - layer7.fc1
+  - layer7.fc2
+  - layer8.self_attn.q_proj
+  - layer8.self_attn.k_proj
+  - layer8.self_attn.v_proj
+  - layer8.self_attn.out_proj
+  - layer8.fc1
+  - layer8.fc2
+  - layer9.self_attn.q_proj
+  - layer9.self_attn.k_proj
+  - layer9.self_attn.v_proj
+  - layer9.self_attn.out_proj
+  - layer9.fc1
+  - layer9.fc2
+  - layer10.self_attn.q_proj
+  - layer10.self_attn.k_proj
+  - layer10.self_attn.v_proj
+  - layer10.self_attn.out_proj
+  - layer10.fc1
+  - layer10.fc2
+  - layer11.self_attn.q_proj
+  - layer11.self_attn.k_proj
+  - layer11.self_attn.v_proj
+  - layer11.self_attn.out_proj
+  - layer11.fc1
+  - layer11.fc2
+  - layer12.self_attn.q_proj
+  - layer12.self_attn.k_proj
+  - layer12.self_attn.v_proj
+  - layer12.self_attn.out_proj
+  - layer12.fc1
+  - layer12.fc2
+  - layer13.self_attn.q_proj
+  - layer13.self_attn.k_proj
+  - layer13.self_attn.v_proj
+  - layer13.self_attn.out_proj
+  - layer13.fc1
+  - layer13.fc2
+  - layer14.self_attn.q_proj
+  - layer14.self_attn.k_proj
+  - layer14.self_attn.v_proj
+  - layer14.self_attn.out_proj
+  - layer14.fc1
+  - layer14.fc2
+  - layer15.self_attn.q_proj
+  - layer15.self_attn.k_proj
+  - layer15.self_attn.v_proj
+  - layer15.self_attn.out_proj
+  - layer15.fc1
+  - layer15.fc2
+  - layer16.self_attn.q_proj
+  - layer16.self_attn.k_proj
+  - layer16.self_attn.v_proj
+  - layer16.self_attn.out_proj
+  - layer16.fc1
+  - layer16.fc2
+  - layer17.self_attn.q_proj
+  - layer17.self_attn.k_proj
+  - layer17.self_attn.v_proj
+  - layer17.self_attn.out_proj
+  - layer17.fc1
+  - layer17.fc2
+  - layer18.self_attn.q_proj
+  - layer18.self_attn.k_proj
+  - layer18.self_attn.v_proj
+  - layer18.self_attn.out_proj
+  - layer18.fc1
+  - layer18.fc2
+  - layer19.self_attn.q_proj
+  - layer19.self_attn.k_proj
+  - layer19.self_attn.v_proj
+  - layer19.self_attn.out_proj
+  - layer19.fc1
+  - layer19.fc2
+  - layer20.self_attn.q_proj
+  - layer20.self_attn.k_proj
+  - layer20.self_attn.v_proj
+  - layer20.self_attn.out_proj
+  - layer20.fc1
+  - layer20.fc2
+  - layer21.self_attn.q_proj
+  - layer21.self_attn.k_proj
+  - layer21.self_attn.v_proj
+  - layer21.self_attn.out_proj
+  - layer21.fc1
+  - layer21.fc2
+  - layer22.self_attn.q_proj
+  - layer22.self_attn.k_proj
+  - layer22.self_attn.v_proj
+  - layer22.self_attn.out_proj
+  - layer22.fc1
+  - layer22.fc2
+  - layer23.self_attn.q_proj
+  - layer23.self_attn.k_proj
+  - layer23.self_attn.v_proj
+  - layer23.self_attn.out_proj
+  - layer23.fc1
+  - layer23.fc2
+  - layer24.self_attn.q_proj
+  - layer24.self_attn.k_proj
+  - layer24.self_attn.v_proj
+  - layer24.self_attn.out_proj
+  - layer24.fc1
+  - layer24.fc2
+  - layer25.self_attn.q_proj
+  - layer25.self_attn.k_proj
+  - layer25.self_attn.v_proj
+  - layer25.self_attn.out_proj
+  - layer25.fc1
+  - layer25.fc2
+  - layer26.self_attn.q_proj
+  - layer26.self_attn.k_proj
+  - layer26.self_attn.v_proj
+  - layer26.self_attn.out_proj
+  - layer26.fc1
+  - layer26.fc2
+  - layer27.self_attn.q_proj
+  - layer27.self_attn.k_proj
+  - layer27.self_attn.v_proj
+  - layer27.self_attn.out_proj
+  - layer27.fc1
+  - layer27.fc2
+  - layer28.self_attn.q_proj
+  - layer28.self_attn.k_proj
+  - layer28.self_attn.v_proj
+  - layer28.self_attn.out_proj
+  - layer28.fc1
+  - layer28.fc2
+  - layer29.self_attn.q_proj
+  - layer29.self_attn.k_proj
+  - layer29.self_attn.v_proj
+  - layer29.self_attn.out_proj
+  - layer29.fc1
+  - layer29.fc2
+  - layer30.self_attn.q_proj
+  - layer30.self_attn.k_proj
+  - layer30.self_attn.v_proj
+  - layer30.self_attn.out_proj
+  - layer30.fc1
+  - layer30.fc2
+  - layer31.self_attn.q_proj
+  - layer31.self_attn.k_proj
+  - layer31.self_attn.v_proj
+  - layer31.self_attn.out_proj
+  - layer31.fc1
+  - layer31.fc2
+
+[Probe Logits Comparison]
+mse      : 9.284191727638e-01
+max_abs  : 9.902343750000e+00
+cosine   : 0.973061859608
+
+[Module Output Comparison]
+layer0.fc1
+  mse      : 1.417046487331e-01
+  max_abs  : 1.929687500000e+00
+  cosine   : 0.978012800217
+
+layer0.fc2
+  mse      : 4.325668327510e-03
+  max_abs  : 5.453125000000e+00
+  cosine   : 0.972683906555
+
+layer0.self_attn.k_proj
+  mse      : 2.214259235188e-03
+  max_abs  : 2.572021484375e-01
+  cosine   : 0.997031211853
+
+layer0.self_attn.out_proj
+  mse      : 1.215575612150e-04
+  max_abs  : 1.031250000000e+00
+  cosine   : 0.999804913998
+
+layer0.self_attn.q_proj
+  mse      : 2.378448145464e-03
+  max_abs  : 3.376464843750e-01
+  cosine   : 0.997029781342
+
+layer0.self_attn.v_proj
+  mse      : 1.042852178216e-03
+  max_abs  : 1.860351562500e-01
+  cosine   : 0.994140744209
+
+layer1.fc1
+  mse      : 3.491796180606e-02
+  max_abs  : 1.654541015625e+00
+  cosine   : 0.985406577587
+
+layer1.fc2
+  mse      : 2.528295479715e-02
+  max_abs  : 3.425000000000e+01
+  cosine   : 0.891123771667
+
+layer1.self_attn.k_proj
+  mse      : 8.730858564377e-02
+  max_abs  : 2.463867187500e+00
+  cosine   : 0.995734810829
+
+layer1.self_attn.out_proj
+  mse      : 4.821362905204e-03
+  max_abs  : 7.369140625000e+00
+  cosine   : 0.843013405800
+
+layer1.self_attn.q_proj
+  mse      : 8.964304625988e-02
+  max_abs  : 2.877929687500e+00
+  cosine   : 0.958081364632
+
+layer1.self_attn.v_proj
+  mse      : 3.544898238033e-03
+  max_abs  : 9.140625000000e-01
+  cosine   : 0.822896063328
+
+layer10.fc1
+  mse      : 1.427496373653e-01
+  max_abs  : 3.098632812500e+00
+  cosine   : 0.972689628601
+
+layer10.fc2
+  mse      : 5.415929481387e-03
+  max_abs  : 1.582031250000e+00
+  cosine   : 0.683221101761
+
+layer10.self_attn.k_proj
+  mse      : 5.587322115898e-01
+  max_abs  : 4.002075195312e+00
+  cosine   : 0.983400106430
+
+layer10.self_attn.out_proj
+  mse      : 2.689880086109e-03
+  max_abs  : 1.061523437500e+00
+  cosine   : 0.498553931713
+
+layer10.self_attn.q_proj
+  mse      : 4.107504189014e-01
+  max_abs  : 4.060546875000e+00
+  cosine   : 0.806913852692
+
+layer10.self_attn.v_proj
+  mse      : 4.508302360773e-02
+  max_abs  : 1.508789062500e+00
+  cosine   : 0.818230152130
+
+layer11.fc1
+  mse      : 1.534596532583e-01
+  max_abs  : 3.052734375000e+00
+  cosine   : 0.971829235554
+
+layer11.fc2
+  mse      : 5.775662139058e-03
+  max_abs  : 1.915039062500e+00
+  cosine   : 0.670804500580
+
+layer11.self_attn.k_proj
+  mse      : 5.443073511124e-01
+  max_abs  : 5.689453125000e+00
+  cosine   : 0.981069445610
+
+layer11.self_attn.out_proj
+  mse      : 3.534425748512e-03
+  max_abs  : 1.760253906250e+00
+  cosine   : 0.569555044174
+
+layer11.self_attn.q_proj
+  mse      : 4.177944362164e-01
+  max_abs  : 4.845703125000e+00
+  cosine   : 0.811787128448
+
+layer11.self_attn.v_proj
+  mse      : 5.258684232831e-02
+  max_abs  : 1.767578125000e+00
+  cosine   : 0.811504364014
+
+layer12.fc1
+  mse      : 1.723437160254e-01
+  max_abs  : 2.961914062500e+00
+  cosine   : 0.969372153282
+
+layer12.fc2
+  mse      : 7.387885358185e-03
+  max_abs  : 1.676757812500e+00
+  cosine   : 0.698904156685
+
+layer12.self_attn.k_proj
+  mse      : 4.460310637951e-01
+  max_abs  : 4.166992187500e+00
+  cosine   : 0.977875590324
+
+layer12.self_attn.out_proj
+  mse      : 5.709311459213e-03
+  max_abs  : 1.554199218750e+00
+  cosine   : 0.469353109598
+
+layer12.self_attn.q_proj
+  mse      : 3.954886496067e-01
+  max_abs  : 3.683868408203e+00
+  cosine   : 0.845035493374
+
+layer12.self_attn.v_proj
+  mse      : 6.918133795261e-02
+  max_abs  : 2.839843750000e+00
+  cosine   : 0.806548953056
+
+layer13.fc1
+  mse      : 1.732498407364e-01
+  max_abs  : 3.495117187500e+00
+  cosine   : 0.967698335648
+
+layer13.fc2
+  mse      : 1.019650511444e-02
+  max_abs  : 1.707031250000e+00
+  cosine   : 0.637870073318
+
+layer13.self_attn.k_proj
+  mse      : 5.100036859512e-01
+  max_abs  : 4.468261718750e+00
+  cosine   : 0.973767995834
+
+layer13.self_attn.out_proj
+  mse      : 4.730676766485e-03
+  max_abs  : 1.258300781250e+00
+  cosine   : 0.563568234444
+
+layer13.self_attn.q_proj
+  mse      : 3.960187435150e-01
+  max_abs  : 3.201171875000e+00
+  cosine   : 0.833218276501
+
+layer13.self_attn.v_proj
+  mse      : 7.350614666939e-02
+  max_abs  : 1.575683593750e+00
+  cosine   : 0.808821439743
+
+layer14.fc1
+  mse      : 1.885172128677e-01
+  max_abs  : 2.977172851562e+00
+  cosine   : 0.965464711189
+
+layer14.fc2
+  mse      : 1.054275501519e-02
+  max_abs  : 2.323730468750e+00
+  cosine   : 0.641404807568
+
+layer14.self_attn.k_proj
+  mse      : 5.159388184547e-01
+  max_abs  : 7.176269531250e+00
+  cosine   : 0.967199146748
+
+layer14.self_attn.out_proj
+  mse      : 5.134525708854e-03
+  max_abs  : 1.783447265625e+00
+  cosine   : 0.515399217606
+
+layer14.self_attn.q_proj
+  mse      : 4.216461181641e-01
+  max_abs  : 3.795898437500e+00
+  cosine   : 0.834310531616
+
+layer14.self_attn.v_proj
+  mse      : 9.047199040651e-02
+  max_abs  : 1.822235107422e+00
+  cosine   : 0.791970491409
+
+layer15.fc1
+  mse      : 1.891481131315e-01
+  max_abs  : 4.468750000000e+00
+  cosine   : 0.968724489212
+
+layer15.fc2
+  mse      : 1.174097321928e-02
+  max_abs  : 2.142089843750e+00
+  cosine   : 0.636845588684
+
+layer15.self_attn.k_proj
+  mse      : 4.865048825741e-01
+  max_abs  : 7.457031250000e+00
+  cosine   : 0.966179966927
+
+layer15.self_attn.out_proj
+  mse      : 5.387693177909e-03
+  max_abs  : 2.165618896484e+00
+  cosine   : 0.558529973030
+
+layer15.self_attn.q_proj
+  mse      : 4.065585434437e-01
+  max_abs  : 4.394531250000e+00
+  cosine   : 0.853216648102
+
+layer15.self_attn.v_proj
+  mse      : 1.021339371800e-01
+  max_abs  : 1.812988281250e+00
+  cosine   : 0.797200500965
+
+layer16.fc1
+  mse      : 2.220389395952e-01
+  max_abs  : 5.254882812500e+00
+  cosine   : 0.964059829712
+
+layer16.fc2
+  mse      : 1.832610554993e-02
+  max_abs  : 2.449707031250e+00
+  cosine   : 0.622628092766
+
+layer16.self_attn.k_proj
+  mse      : 4.252099692822e-01
+  max_abs  : 3.345703125000e+00
+  cosine   : 0.971450388432
+
+layer16.self_attn.out_proj
+  mse      : 8.990666829050e-03
+  max_abs  : 8.059082031250e-01
+  cosine   : 0.581208884716
+
+layer16.self_attn.q_proj
+  mse      : 3.903915882111e-01
+  max_abs  : 3.464843750000e+00
+  cosine   : 0.855594277382
+
+layer16.self_attn.v_proj
+  mse      : 1.314570456743e-01
+  max_abs  : 4.064453125000e+00
+  cosine   : 0.799398839474
+
+layer17.fc1
+  mse      : 2.454187124968e-01
+  max_abs  : 7.458984375000e+00
+  cosine   : 0.964381694794
+
+layer17.fc2
+  mse      : 2.913434058428e-02
+  max_abs  : 1.724243164062e+00
+  cosine   : 0.653186142445
+
+layer17.self_attn.k_proj
+  mse      : 4.038462340832e-01
+  max_abs  : 3.649536132812e+00
+  cosine   : 0.975890874863
+
+layer17.self_attn.out_proj
+  mse      : 1.335099712014e-02
+  max_abs  : 1.061035156250e+00
+  cosine   : 0.655328035355
+
+layer17.self_attn.q_proj
+  mse      : 3.860265612602e-01
+  max_abs  : 3.317504882812e+00
+  cosine   : 0.857636272907
+
+layer17.self_attn.v_proj
+  mse      : 1.565568298101e-01
+  max_abs  : 4.472656250000e+00
+  cosine   : 0.789252400398
+
+layer18.fc1
+  mse      : 2.787758708000e-01
+  max_abs  : 8.429687500000e+00
+  cosine   : 0.965552091599
+
+layer18.fc2
+  mse      : 3.196492418647e-02
+  max_abs  : 1.613281250000e+00
+  cosine   : 0.686814546585
+
+layer18.self_attn.k_proj
+  mse      : 3.503437340260e-01
+  max_abs  : 3.543945312500e+00
+  cosine   : 0.974222779274
+
+layer18.self_attn.out_proj
+  mse      : 1.644543744624e-02
+  max_abs  : 1.000038146973e+00
+  cosine   : 0.582916557789
+
+layer18.self_attn.q_proj
+  mse      : 3.640328347683e-01
+  max_abs  : 4.198242187500e+00
+  cosine   : 0.873718321323
+
+layer18.self_attn.v_proj
+  mse      : 1.920103430748e-01
+  max_abs  : 5.052734375000e+00
+  cosine   : 0.786710143089
+
+layer19.fc1
+  mse      : 3.065112233162e-01
+  max_abs  : 8.345703125000e+00
+  cosine   : 0.964843630791
+
+layer19.fc2
+  mse      : 3.742181882262e-02
+  max_abs  : 1.872314453125e+00
+  cosine   : 0.705903172493
+
+layer19.self_attn.k_proj
+  mse      : 3.828938603401e-01
+  max_abs  : 3.981079101562e+00
+  cosine   : 0.972781181335
+
+layer19.self_attn.out_proj
+  mse      : 1.675142347813e-02
+  max_abs  : 9.892578125000e-01
+  cosine   : 0.647358894348
+
+layer19.self_attn.q_proj
+  mse      : 3.657287061214e-01
+  max_abs  : 3.958984375000e+00
+  cosine   : 0.863485574722
+
+layer19.self_attn.v_proj
+  mse      : 2.099167406559e-01
+  max_abs  : 3.606933593750e+00
+  cosine   : 0.805136680603
+
+layer2.fc1
+  mse      : 4.460907354951e-02
+  max_abs  : 2.402343750000e+00
+  cosine   : 0.971255242825
+
+layer2.fc2
+  mse      : 6.215970031917e-03
+  max_abs  : 1.029296875000e+01
+  cosine   : 0.907266199589
+
+layer2.self_attn.k_proj
+  mse      : 6.532043963671e-02
+  max_abs  : 3.880126953125e+00
+  cosine   : 0.997190177441
+
+layer2.self_attn.out_proj
+  mse      : 2.323297038674e-02
+  max_abs  : 2.289062500000e+01
+  cosine   : 0.113898299634
+
+layer2.self_attn.q_proj
+  mse      : 8.391021937132e-02
+  max_abs  : 4.323242187500e+00
+  cosine   : 0.968594908714
+
+layer2.self_attn.v_proj
+  mse      : 4.183679819107e-03
+  max_abs  : 2.063171386719e+00
+  cosine   : 0.846538424492
+
+layer20.fc1
+  mse      : 3.235478103161e-01
+  max_abs  : 5.468750000000e+00
+  cosine   : 0.968332827091
+
+layer20.fc2
+  mse      : 4.264672100544e-02
+  max_abs  : 1.546875000000e+00
+  cosine   : 0.740964531898
+
+layer20.self_attn.k_proj
+  mse      : 3.628694713116e-01
+  max_abs  : 3.409179687500e+00
+  cosine   : 0.967363238335
+
+layer20.self_attn.out_proj
+  mse      : 2.268793620169e-02
+  max_abs  : 1.998535156250e+00
+  cosine   : 0.707168221474
+
+layer20.self_attn.q_proj
+  mse      : 3.470130860806e-01
+  max_abs  : 3.953125000000e+00
+  cosine   : 0.875289976597
+
+layer20.self_attn.v_proj
+  mse      : 2.583225071430e-01
+  max_abs  : 4.441406250000e+00
+  cosine   : 0.816600322723
+
+layer21.fc1
+  mse      : 3.289037644863e-01
+  max_abs  : 7.425781250000e+00
+  cosine   : 0.969334840775
+
+layer21.fc2
+  mse      : 4.837307333946e-02
+  max_abs  : 2.428710937500e+00
+  cosine   : 0.759008288383
+
+layer21.self_attn.k_proj
+  mse      : 3.311991691589e-01
+  max_abs  : 3.383789062500e+00
+  cosine   : 0.966542720795
+
+layer21.self_attn.out_proj
+  mse      : 2.616753801703e-02
+  max_abs  : 1.934570312500e+00
+  cosine   : 0.675722956657
+
+layer21.self_attn.q_proj
+  mse      : 3.258359730244e-01
+  max_abs  : 3.446289062500e+00
+  cosine   : 0.877496063709
+
+layer21.self_attn.v_proj
+  mse      : 2.610116302967e-01
+  max_abs  : 3.295898437500e+00
+  cosine   : 0.828149974346
+
+layer22.fc1
+  mse      : 3.256272375584e-01
+  max_abs  : 5.205078125000e+00
+  cosine   : 0.971816003323
+
+layer22.fc2
+  mse      : 4.985124617815e-02
+  max_abs  : 3.115234375000e+00
+  cosine   : 0.769014954567
+
+layer22.self_attn.k_proj
+  mse      : 3.161943554878e-01
+  max_abs  : 4.118164062500e+00
+  cosine   : 0.960575938225
+
+layer22.self_attn.out_proj
+  mse      : 2.482454106212e-02
+  max_abs  : 1.706207275391e+00
+  cosine   : 0.647250413895
+
+layer22.self_attn.q_proj
+  mse      : 3.146143853664e-01
+  max_abs  : 3.470703125000e+00
+  cosine   : 0.882501125336
+
+layer22.self_attn.v_proj
+  mse      : 2.600565254688e-01
+  max_abs  : 4.786865234375e+00
+  cosine   : 0.837663531303
+
+layer23.fc1
+  mse      : 3.535828292370e-01
+  max_abs  : 6.297851562500e+00
+  cosine   : 0.972277224064
+
+layer23.fc2
+  mse      : 6.228279694915e-02
+  max_abs  : 2.073242187500e+00
+  cosine   : 0.782896757126
+
+layer23.self_attn.k_proj
+  mse      : 2.948618829250e-01
+  max_abs  : 3.525878906250e+00
+  cosine   : 0.964347720146
+
+layer23.self_attn.out_proj
+  mse      : 4.669630900025e-02
+  max_abs  : 1.992675781250e+00
+  cosine   : 0.730351150036
+
+layer23.self_attn.q_proj
+  mse      : 2.945703268051e-01
+  max_abs  : 3.249023437500e+00
+  cosine   : 0.889225125313
+
+layer23.self_attn.v_proj
+  mse      : 2.484446018934e-01
+  max_abs  : 4.070312500000e+00
+  cosine   : 0.858894228935
+
+layer24.fc1
+  mse      : 3.754623234272e-01
+  max_abs  : 6.767578125000e+00
+  cosine   : 0.974522233009
+
+layer24.fc2
+  mse      : 7.315457612276e-02
+  max_abs  : 3.623779296875e+00
+  cosine   : 0.797036826611
+
+layer24.self_attn.k_proj
+  mse      : 2.695924341679e-01
+  max_abs  : 3.975585937500e+00
+  cosine   : 0.964222431183
+
+layer24.self_attn.out_proj
+  mse      : 4.589621350169e-02
+  max_abs  : 3.582275390625e+00
+  cosine   : 0.760367453098
+
+layer24.self_attn.q_proj
+  mse      : 2.828000187874e-01
+  max_abs  : 3.104980468750e+00
+  cosine   : 0.883411943913
+
+layer24.self_attn.v_proj
+  mse      : 2.683667838573e-01
+  max_abs  : 3.845703125000e+00
+  cosine   : 0.867685914040
+
+layer25.fc1
+  mse      : 3.807445466518e-01
+  max_abs  : 5.164062500000e+00
+  cosine   : 0.975668072701
+
+layer25.fc2
+  mse      : 8.583451062441e-02
+  max_abs  : 3.233825683594e+00
+  cosine   : 0.805808186531
+
+layer25.self_attn.k_proj
+  mse      : 2.495878934860e-01
+  max_abs  : 2.912567138672e+00
+  cosine   : 0.957002162933
+
+layer25.self_attn.out_proj
+  mse      : 4.101371765137e-02
+  max_abs  : 3.226074218750e+00
+  cosine   : 0.728021204472
+
+layer25.self_attn.q_proj
+  mse      : 2.824953794479e-01
+  max_abs  : 2.967773437500e+00
+  cosine   : 0.899134993553
+
+layer25.self_attn.v_proj
+  mse      : 3.018111884594e-01
+  max_abs  : 3.292968750000e+00
+  cosine   : 0.875565588474
+
+layer26.fc1
+  mse      : 4.095912873745e-01
+  max_abs  : 5.665039062500e+00
+  cosine   : 0.976008474827
+
+layer26.fc2
+  mse      : 1.083117350936e-01
+  max_abs  : 7.149414062500e+00
+  cosine   : 0.809727787971
+
+layer26.self_attn.k_proj
+  mse      : 2.410277724266e-01
+  max_abs  : 3.799804687500e+00
+  cosine   : 0.961731493473
+
+layer26.self_attn.out_proj
+  mse      : 5.677733197808e-02
+  max_abs  : 4.655273437500e+00
+  cosine   : 0.723359704018
+
+layer26.self_attn.q_proj
+  mse      : 2.656868100166e-01
+  max_abs  : 2.830566406250e+00
+  cosine   : 0.905446171761
+
+layer26.self_attn.v_proj
+  mse      : 3.040468692780e-01
+  max_abs  : 3.455078125000e+00
+  cosine   : 0.887046456337
+
+layer27.fc1
+  mse      : 4.246211647987e-01
+  max_abs  : 5.766601562500e+00
+  cosine   : 0.975939154625
+
+layer27.fc2
+  mse      : 1.281184554100e-01
+  max_abs  : 6.112304687500e+00
+  cosine   : 0.811506032944
+
+layer27.self_attn.k_proj
+  mse      : 2.507987618446e-01
+  max_abs  : 3.189453125000e+00
+  cosine   : 0.972779810429
+
+layer27.self_attn.out_proj
+  mse      : 7.959305495024e-02
+  max_abs  : 5.853027343750e+00
+  cosine   : 0.736796379089
+
+layer27.self_attn.q_proj
+  mse      : 2.912147641182e-01
+  max_abs  : 3.456054687500e+00
+  cosine   : 0.903425633907
+
+layer27.self_attn.v_proj
+  mse      : 3.444774746895e-01
+  max_abs  : 4.001342773438e+00
+  cosine   : 0.880693495274
+
+layer28.fc1
+  mse      : 4.317811429501e-01
+  max_abs  : 5.954101562500e+00
+  cosine   : 0.974277555943
+
+layer28.fc2
+  mse      : 1.589223891497e-01
+  max_abs  : 6.615234375000e+00
+  cosine   : 0.801211535931
+
+layer28.self_attn.k_proj
+  mse      : 2.512877583504e-01
+  max_abs  : 3.266601562500e+00
+  cosine   : 0.980010151863
+
+layer28.self_attn.out_proj
+  mse      : 5.655626207590e-02
+  max_abs  : 5.245849609375e+00
+  cosine   : 0.744132637978
+
+layer28.self_attn.q_proj
+  mse      : 3.106424808502e-01
+  max_abs  : 3.258300781250e+00
+  cosine   : 0.924287319183
+
+layer28.self_attn.v_proj
+  mse      : 3.703606128693e-01
+  max_abs  : 4.745117187500e+00
+  cosine   : 0.878274142742
+
+layer29.fc1
+  mse      : 4.333128035069e-01
+  max_abs  : 7.248046875000e+00
+  cosine   : 0.972681164742
+
+layer29.fc2
+  mse      : 1.728651076555e-01
+  max_abs  : 9.501953125000e+00
+  cosine   : 0.812010347843
+
+layer29.self_attn.k_proj
+  mse      : 2.652234137058e-01
+  max_abs  : 4.011718750000e+00
+  cosine   : 0.989658296108
+
+layer29.self_attn.out_proj
+  mse      : 1.194268912077e-01
+  max_abs  : 8.945312500000e+00
+  cosine   : 0.566988468170
+
+layer29.self_attn.q_proj
+  mse      : 3.666800260544e-01
+  max_abs  : 3.783691406250e+00
+  cosine   : 0.944053590298
+
+layer29.self_attn.v_proj
+  mse      : 4.084144234657e-01
+  max_abs  : 4.181640625000e+00
+  cosine   : 0.880422651768
+
+layer3.fc1
+  mse      : 5.197955295444e-02
+  max_abs  : 2.642578125000e+00
+  cosine   : 0.974088430405
+
+layer3.fc2
+  mse      : 2.263356233016e-03
+  max_abs  : 4.988281250000e+00
+  cosine   : 0.772212684155
+
+layer3.self_attn.k_proj
+  mse      : 6.184839084744e-02
+  max_abs  : 2.291992187500e+00
+  cosine   : 0.997530817986
+
+layer3.self_attn.out_proj
+  mse      : 3.469638526440e-03
+  max_abs  : 6.218261718750e+00
+  cosine   : 0.321233004332
+
+layer3.self_attn.q_proj
+  mse      : 1.255978643894e-01
+  max_abs  : 4.566406250000e+00
+  cosine   : 0.967795372009
+
+layer3.self_attn.v_proj
+  mse      : 5.912989377975e-03
+  max_abs  : 1.659179687500e+00
+  cosine   : 0.880201220512
+
+layer30.fc1
+  mse      : 4.489535987377e-01
+  max_abs  : 1.103417968750e+01
+  cosine   : 0.970439314842
+
+layer30.fc2
+  mse      : 2.078375965357e-01
+  max_abs  : 1.315234375000e+01
+  cosine   : 0.805689752102
+
+layer30.self_attn.k_proj
+  mse      : 2.712952196598e-01
+  max_abs  : 3.375000000000e+00
+  cosine   : 0.992348790169
+
+layer30.self_attn.out_proj
+  mse      : 7.556832581758e-02
+  max_abs  : 1.489453125000e+01
+  cosine   : 0.534843444824
+
+layer30.self_attn.q_proj
+  mse      : 4.802582263947e-01
+  max_abs  : 5.055664062500e+00
+  cosine   : 0.945171236992
+
+layer30.self_attn.v_proj
+  mse      : 4.382185041904e-01
+  max_abs  : 4.906250000000e+00
+  cosine   : 0.878098189831
+
+layer31.fc1
+  mse      : 5.064622163773e-01
+  max_abs  : 1.302880859375e+01
+  cosine   : 0.974714756012
+
+layer31.fc2
+  mse      : 2.298515290022e-01
+  max_abs  : 1.946875000000e+01
+  cosine   : 0.754044651985
+
+layer31.self_attn.k_proj
+  mse      : 2.815761864185e-01
+  max_abs  : 3.832031250000e+00
+  cosine   : 0.993505120277
+
+layer31.self_attn.out_proj
+  mse      : 1.711465120316e-01
+  max_abs  : 1.786718750000e+01
+  cosine   : 0.512722611427
+
+layer31.self_attn.q_proj
+  mse      : 5.282495617867e-01
+  max_abs  : 5.959472656250e+00
+  cosine   : 0.961625754833
+
+layer31.self_attn.v_proj
+  mse      : 4.375478625298e-01
+  max_abs  : 5.043457031250e+00
+  cosine   : 0.870418727398
+
+layer4.fc1
+  mse      : 5.953755974770e-02
+  max_abs  : 2.586914062500e+00
+  cosine   : 0.976336002350
+
+layer4.fc2
+  mse      : 1.666755415499e-03
+  max_abs  : 3.121093750000e+00
+  cosine   : 0.766903340816
+
+layer4.self_attn.k_proj
+  mse      : 5.326305329800e-02
+  max_abs  : 1.854248046875e+00
+  cosine   : 0.996190071106
+
+layer4.self_attn.out_proj
+  mse      : 2.776952460408e-03
+  max_abs  : 3.446777343750e+00
+  cosine   : 0.205899566412
+
+layer4.self_attn.q_proj
+  mse      : 9.787132591009e-02
+  max_abs  : 2.950927734375e+00
+  cosine   : 0.978843808174
+
+layer4.self_attn.v_proj
+  mse      : 6.864380557090e-03
+  max_abs  : 1.044067382812e+00
+  cosine   : 0.869858920574
+
+layer5.fc1
+  mse      : 7.730238139629e-02
+  max_abs  : 3.316650390625e+00
+  cosine   : 0.974573493004
+
+layer5.fc2
+  mse      : 2.397397300228e-03
+  max_abs  : 1.691162109375e+00
+  cosine   : 0.718959510326
+
+layer5.self_attn.k_proj
+  mse      : 1.509157419205e-01
+  max_abs  : 3.578125000000e+00
+  cosine   : 0.992329597473
+
+layer5.self_attn.out_proj
+  mse      : 2.882432891056e-03
+  max_abs  : 9.953613281250e-01
+  cosine   : 0.241076469421
+
+layer5.self_attn.q_proj
+  mse      : 2.607614994049e-01
+  max_abs  : 3.712707519531e+00
+  cosine   : 0.951754331589
+
+layer5.self_attn.v_proj
+  mse      : 1.081574894488e-02
+  max_abs  : 1.229980468750e+00
+  cosine   : 0.862773120403
+
+layer6.fc1
+  mse      : 9.398802369833e-02
+  max_abs  : 2.546386718750e+00
+  cosine   : 0.975064337254
+
+layer6.fc2
+  mse      : 2.755719702691e-03
+  max_abs  : 9.222412109375e-01
+  cosine   : 0.783108115196
+
+layer6.self_attn.k_proj
+  mse      : 2.794369161129e-01
+  max_abs  : 4.365234375000e+00
+  cosine   : 0.990113496780
+
+layer6.self_attn.out_proj
+  mse      : 2.738851821050e-03
+  max_abs  : 1.124755859375e+00
+  cosine   : 0.314580142498
+
+layer6.self_attn.q_proj
+  mse      : 3.421111404896e-01
+  max_abs  : 3.446655273438e+00
+  cosine   : 0.931959211826
+
+layer6.self_attn.v_proj
+  mse      : 1.554317213595e-02
+  max_abs  : 1.360839843750e+00
+  cosine   : 0.851655960083
+
+layer7.fc1
+  mse      : 1.115140318871e-01
+  max_abs  : 2.955078125000e+00
+  cosine   : 0.976215481758
+
+layer7.fc2
+  mse      : 3.533688141033e-03
+  max_abs  : 1.200134277344e+00
+  cosine   : 0.705016732216
+
+layer7.self_attn.k_proj
+  mse      : 3.979017734528e-01
+  max_abs  : 3.855468750000e+00
+  cosine   : 0.988522350788
+
+layer7.self_attn.out_proj
+  mse      : 3.607963677496e-03
+  max_abs  : 9.052734375000e-01
+  cosine   : 0.286690235138
+
+layer7.self_attn.q_proj
+  mse      : 4.031593501568e-01
+  max_abs  : 3.690002441406e+00
+  cosine   : 0.904973387718
+
+layer7.self_attn.v_proj
+  mse      : 2.218054234982e-02
+  max_abs  : 1.201416015625e+00
+  cosine   : 0.839999556541
+
+layer8.fc1
+  mse      : 1.147426515818e-01
+  max_abs  : 2.826171875000e+00
+  cosine   : 0.975426614285
+
+layer8.fc2
+  mse      : 4.235725384206e-03
+  max_abs  : 1.052978515625e+00
+  cosine   : 0.681948900223
+
+layer8.self_attn.k_proj
+  mse      : 5.202897787094e-01
+  max_abs  : 4.578125000000e+00
+  cosine   : 0.987714290619
+
+layer8.self_attn.out_proj
+  mse      : 2.930992050096e-03
+  max_abs  : 8.903808593750e-01
+  cosine   : 0.427166014910
+
+layer8.self_attn.q_proj
+  mse      : 4.592832624912e-01
+  max_abs  : 4.773315429688e+00
+  cosine   : 0.819616913795
+
+layer8.self_attn.v_proj
+  mse      : 2.954251877964e-02
+  max_abs  : 1.421875000000e+00
+  cosine   : 0.824223875999
+
+layer9.fc1
+  mse      : 1.238442510366e-01
+  max_abs  : 2.665039062500e+00
+  cosine   : 0.975692510605
+
+layer9.fc2
+  mse      : 5.606731865555e-03
+  max_abs  : 1.529541015625e+00
+  cosine   : 0.698768258095
+
+layer9.self_attn.k_proj
+  mse      : 5.213594436646e-01
+  max_abs  : 4.673339843750e+00
+  cosine   : 0.985567212105
+
+layer9.self_attn.out_proj
+  mse      : 2.739699557424e-03
+  max_abs  : 1.144531250000e+00
+  cosine   : 0.440056502819
+
+layer9.self_attn.q_proj
+  mse      : 4.145447313786e-01
+  max_abs  : 4.285156250000e+00
+  cosine   : 0.839600265026
+
+layer9.self_attn.v_proj
+  mse      : 3.737711533904e-02
+  max_abs  : 1.624755859375e+00
+  cosine   : 0.819958508015
+
+[Modified]
+modified_ppl : 12.04602528
+ppl_diff     : 1.185720443726e+00
+relative_diff: 1.091792967157e-01
+

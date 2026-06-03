@@ -17,6 +17,11 @@ outputs/
 results/
 wandb/
 runs/
+phase3/results_qr_stats/
+phase3/results_ver2/
+phase3/results_ver3/
+phase3/results_dist_plots/
+phase3/zeroshot_results/
 
 data/
 datasets/

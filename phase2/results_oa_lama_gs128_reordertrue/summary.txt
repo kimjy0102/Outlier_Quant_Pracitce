@@ -2,7 +2,7 @@
 model_id           : facebook/opt-13b
 replace_scope      : all
 target_modules     : ['self_attn.q_proj', 'self_attn.k_proj', 'self_attn.v_proj', 'self_attn.out_proj', 'fc1', 'fc2']
-act_group_size     : 16
+act_group_size     : 128
 act_threshold      : 0
 reorder            : True
 n_calib_samples    : 128
@@ -10,7 +10,7 @@ act_sort_metric    : abs_mean
 
 [Weight Quant]
 enable_weight_quant: True
-weight_group_size  : 16
+weight_group_size  : 128
 
 [Baseline]
 baseline_ppl : 10.12743664
@@ -19,14 +19,14 @@ baseline_ppl : 10.12743664
 n_modules_reordered: 240
 n_outlier_threshold>0: 240
 threshold_min: 4
-threshold_max: 336
-threshold_mean: 59.3
+threshold_max: 159
+threshold_mean: 37.1
 
 [Replacement]
 replaced_count : 240
 
 [OA-LAMA Quant]
-modified_ppl : 10.61627674
-ppl_diff     : 4.888401031494e-01
-relative_diff: 4.826888783693e-02
+modified_ppl : 11.37658119
+ppl_diff     : 1.249144554138e+00
+relative_diff: 1.233426185523e-01
 

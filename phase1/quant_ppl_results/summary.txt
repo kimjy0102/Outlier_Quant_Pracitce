@@ -12,12 +12,12 @@ enable_weight_quant: True
 weight_bits        : 8
 weight_quant_mode  : group
 weight_ch_axis     : 0
-weight_group_size  : 128
+weight_group_size  : 256
 enable_act_quant   : True
-act_bits           : 8
+act_bits           : 7
 act_quant_mode     : group
 act_ch_axis        : -1
-act_group_size     : 128
+act_group_size     : 256
 quant_impl         : fake
 
 [Baseline]
@@ -219,973 +219,973 @@ replaced_count : 192
   - layer31.fc2
 
 [Probe Logits Comparison]
-mse      : 1.277140434831e-02
-max_abs  : 1.109375000000e+00
-cosine   : 0.999628543854
+mse      : 3.881123289466e-02
+max_abs  : 1.289062500000e+00
+cosine   : 0.998901128769
 
 [Module Output Comparison]
 layer0.fc1
-  mse      : 6.998297176324e-04
-  max_abs  : 1.503906250000e-01
-  cosine   : 0.999726951122
+  mse      : 6.412548013031e-03
+  max_abs  : 4.179687500000e-01
+  cosine   : 0.998129725456
 
 layer0.fc2
-  mse      : 2.644842243171e-05
-  max_abs  : 4.140625000000e-01
-  cosine   : 0.999861061573
+  mse      : 3.251651069149e-04
+  max_abs  : 1.820312500000e+00
+  cosine   : 0.998063206673
 
 layer0.self_attn.k_proj
-  mse      : 3.823423685390e-05
-  max_abs  : 3.759765625000e-02
-  cosine   : 0.999944329262
+  mse      : 1.443095243303e-04
+  max_abs  : 8.007812500000e-02
+  cosine   : 0.999801278114
 
 layer0.self_attn.out_proj
-  mse      : 1.874756776488e-06
-  max_abs  : 1.328125000000e-01
-  cosine   : 1.000032782555
+  mse      : 6.794730325055e-06
+  max_abs  : 2.343750000000e-01
+  cosine   : 1.000023603439
 
 layer0.self_attn.q_proj
-  mse      : 4.080059443368e-05
-  max_abs  : 4.833984375000e-02
-  cosine   : 0.999944448471
+  mse      : 1.524323306512e-04
+  max_abs  : 6.787109375000e-02
+  cosine   : 0.999804913998
 
 layer0.self_attn.v_proj
-  mse      : 1.732172495394e-05
-  max_abs  : 2.420043945312e-02
-  cosine   : 0.999897480011
+  mse      : 6.416366522899e-05
+  max_abs  : 5.322265625000e-02
+  cosine   : 0.999632298946
 
 layer1.fc1
-  mse      : 1.031924388371e-03
-  max_abs  : 1.962890625000e-01
-  cosine   : 0.999479353428
+  mse      : 1.006682775915e-02
+  max_abs  : 5.566406250000e-01
+  cosine   : 0.996640980244
 
 layer1.fc2
-  mse      : 3.606052268879e-05
-  max_abs  : 5.156250000000e-01
-  cosine   : 0.999754130840
+  mse      : 1.517513737781e-04
+  max_abs  : 1.062500000000e+00
+  cosine   : 0.998678743839
 
 layer1.self_attn.k_proj
-  mse      : 4.053226439282e-04
-  max_abs  : 1.308593750000e-01
-  cosine   : 0.999975323677
+  mse      : 2.887657377869e-03
+  max_abs  : 3.359375000000e-01
+  cosine   : 0.999857783318
 
 layer1.self_attn.out_proj
-  mse      : 4.555061241263e-05
-  max_abs  : 8.671875000000e-01
-  cosine   : 0.998873591423
+  mse      : 6.180086638778e-04
+  max_abs  : 2.488281250000e+00
+  cosine   : 0.983399510384
 
 layer1.self_attn.q_proj
-  mse      : 4.274598031770e-04
-  max_abs  : 1.472167968750e-01
-  cosine   : 0.999782443047
+  mse      : 3.555217757821e-03
+  max_abs  : 4.013671875000e-01
+  cosine   : 0.998224973679
 
 layer1.self_attn.v_proj
-  mse      : 1.243683072971e-04
-  max_abs  : 7.513427734375e-02
-  cosine   : 0.991931915283
+  mse      : 5.442530382425e-04
+  max_abs  : 2.714920043945e-01
+  cosine   : 0.964648127556
 
 layer10.fc1
-  mse      : 2.356411190704e-03
-  max_abs  : 3.681640625000e-01
-  cosine   : 0.999546229839
+  mse      : 1.827574335039e-02
+  max_abs  : 9.902343750000e-01
+  cosine   : 0.997580170631
 
 layer10.fc2
-  mse      : 1.028856931953e-04
-  max_abs  : 6.933593750000e-02
-  cosine   : 0.994174242020
+  mse      : 5.454687634483e-04
+  max_abs  : 2.207031250000e-01
+  cosine   : 0.970368146896
 
 layer10.self_attn.k_proj
-  mse      : 2.793644322082e-03
-  max_abs  : 3.085937500000e-01
-  cosine   : 0.999909102917
+  mse      : 2.315468899906e-02
+  max_abs  : 8.068847656250e-01
+  cosine   : 0.999372601509
 
 layer10.self_attn.out_proj
-  mse      : 5.734206206398e-05
-  max_abs  : 1.085205078125e-01
-  cosine   : 0.986042201519
+  mse      : 2.661770558916e-04
+  max_abs  : 5.949707031250e-01
+  cosine   : 0.940390706062
 
 layer10.self_attn.q_proj
-  mse      : 3.507842076942e-03
-  max_abs  : 3.388671875000e-01
-  cosine   : 0.998260498047
+  mse      : 2.341969124973e-02
+  max_abs  : 7.871093750000e-01
+  cosine   : 0.989257454872
 
 layer10.self_attn.v_proj
-  mse      : 8.753302390687e-04
-  max_abs  : 2.377929687500e-01
-  cosine   : 0.996391654015
+  mse      : 5.011234432459e-03
+  max_abs  : 4.755859375000e-01
+  cosine   : 0.981685400009
 
 layer11.fc1
-  mse      : 2.542619360611e-03
-  max_abs  : 4.711303710938e-01
-  cosine   : 0.999540448189
+  mse      : 1.742452196777e-02
+  max_abs  : 9.218750000000e-01
+  cosine   : 0.997694015503
 
 layer11.fc2
-  mse      : 1.194504511659e-04
-  max_abs  : 6.994628906250e-02
-  cosine   : 0.993731856346
+  mse      : 6.354888319038e-04
+  max_abs  : 3.164062500000e-01
+  cosine   : 0.968202233315
 
 layer11.self_attn.k_proj
-  mse      : 2.978996839374e-03
-  max_abs  : 4.121093750000e-01
-  cosine   : 0.999892711639
+  mse      : 2.130843698978e-02
+  max_abs  : 7.304687500000e-01
+  cosine   : 0.999306142330
 
 layer11.self_attn.out_proj
-  mse      : 8.218192670029e-05
-  max_abs  : 1.721191406250e-01
-  cosine   : 0.989875793457
+  mse      : 4.237148968969e-04
+  max_abs  : 4.736328125000e-01
+  cosine   : 0.956231117249
 
 layer11.self_attn.q_proj
-  mse      : 3.529071807861e-03
-  max_abs  : 4.199218750000e-01
-  cosine   : 0.998354971409
+  mse      : 2.158357016742e-02
+  max_abs  : 7.773437500000e-01
+  cosine   : 0.990475773811
 
 layer11.self_attn.v_proj
-  mse      : 1.015794929117e-03
-  max_abs  : 2.613525390625e-01
-  cosine   : 0.996362447739
+  mse      : 5.588673520833e-03
+  max_abs  : 4.550781250000e-01
+  cosine   : 0.981785774231
 
 layer12.fc1
-  mse      : 2.670859452337e-03
-  max_abs  : 4.243164062500e-01
-  cosine   : 0.999524891376
+  mse      : 1.982527226210e-02
+  max_abs  : 7.890625000000e-01
+  cosine   : 0.997507810593
 
 layer12.fc2
-  mse      : 1.456320460420e-04
-  max_abs  : 8.248901367188e-02
-  cosine   : 0.994460701942
+  mse      : 7.600800599903e-04
+  max_abs  : 2.343750000000e-01
+  cosine   : 0.971764206886
 
 layer12.self_attn.k_proj
-  mse      : 3.249153494835e-03
-  max_abs  : 3.203125000000e-01
-  cosine   : 0.999839186668
+  mse      : 2.218782342970e-02
+  max_abs  : 7.285156250000e-01
+  cosine   : 0.998945713043
 
 layer12.self_attn.out_proj
-  mse      : 9.480202425038e-05
-  max_abs  : 1.157226562500e-01
-  cosine   : 0.989178836346
+  mse      : 5.018840893172e-04
+  max_abs  : 5.644531250000e-01
+  cosine   : 0.957406401634
 
 layer12.self_attn.q_proj
-  mse      : 3.794312709942e-03
-  max_abs  : 3.361816406250e-01
-  cosine   : 0.998489141464
+  mse      : 2.311981841922e-02
+  max_abs  : 9.023437500000e-01
+  cosine   : 0.991492271423
 
 layer12.self_attn.v_proj
-  mse      : 1.230869442225e-03
-  max_abs  : 1.971435546875e-01
-  cosine   : 0.996636629105
+  mse      : 6.905921269208e-03
+  max_abs  : 4.346923828125e-01
+  cosine   : 0.982706189156
 
 layer13.fc1
-  mse      : 2.611906500533e-03
-  max_abs  : 3.967895507812e-01
-  cosine   : 0.999502301216
+  mse      : 1.804843172431e-02
+  max_abs  : 7.753906250000e-01
+  cosine   : 0.997459650040
 
 layer13.fc2
-  mse      : 1.985826675082e-04
-  max_abs  : 8.557128906250e-02
-  cosine   : 0.993633985519
+  mse      : 9.631725843064e-04
+  max_abs  : 5.019531250000e-01
+  cosine   : 0.970823109150
 
 layer13.self_attn.k_proj
-  mse      : 3.384702838957e-03
-  max_abs  : 3.085937500000e-01
-  cosine   : 0.999831557274
+  mse      : 2.153406664729e-02
+  max_abs  : 7.031250000000e-01
+  cosine   : 0.998920261860
 
 layer13.self_attn.out_proj
-  mse      : 1.051960716723e-04
-  max_abs  : 1.225585937500e-01
-  cosine   : 0.990724503994
+  mse      : 5.227777874097e-04
+  max_abs  : 3.852539062500e-01
+  cosine   : 0.960323095322
 
 layer13.self_attn.q_proj
-  mse      : 3.877618350089e-03
-  max_abs  : 4.179687500000e-01
-  cosine   : 0.998328745365
+  mse      : 2.336251921952e-02
+  max_abs  : 8.261718750000e-01
+  cosine   : 0.990788459778
 
 layer13.self_attn.v_proj
-  mse      : 1.255773589946e-03
-  max_abs  : 2.229309082031e-01
-  cosine   : 0.996717870235
+  mse      : 7.058072835207e-03
+  max_abs  : 5.024414062500e-01
+  cosine   : 0.982975363731
 
 layer14.fc1
-  mse      : 2.802790142596e-03
-  max_abs  : 3.691406250000e-01
-  cosine   : 0.999482274055
+  mse      : 1.856255345047e-02
+  max_abs  : 8.339843750000e-01
+  cosine   : 0.997333288193
 
 layer14.fc2
-  mse      : 2.173194225179e-04
-  max_abs  : 8.607864379883e-02
-  cosine   : 0.993121504784
+  mse      : 1.059378148057e-03
+  max_abs  : 4.941406250000e-01
+  cosine   : 0.966243863106
 
 layer14.self_attn.k_proj
-  mse      : 3.483989275992e-03
-  max_abs  : 3.471679687500e-01
-  cosine   : 0.999786496162
+  mse      : 2.237104624510e-02
+  max_abs  : 8.691406250000e-01
+  cosine   : 0.998663485050
 
 layer14.self_attn.out_proj
-  mse      : 1.220910198754e-04
-  max_abs  : 1.757812500000e-01
-  cosine   : 0.989494621754
+  mse      : 5.911496118642e-04
+  max_abs  : 3.598632812500e-01
+  cosine   : 0.954945445061
 
 layer14.self_attn.q_proj
-  mse      : 3.938417881727e-03
-  max_abs  : 4.896850585938e-01
-  cosine   : 0.998439371586
+  mse      : 2.387732081115e-02
+  max_abs  : 8.496093750000e-01
+  cosine   : 0.991155624390
 
 layer14.self_attn.v_proj
-  mse      : 1.506679458544e-03
-  max_abs  : 3.047485351562e-01
-  cosine   : 0.996554851532
+  mse      : 8.207579143345e-03
+  max_abs  : 4.940185546875e-01
+  cosine   : 0.982489347458
 
 layer15.fc1
-  mse      : 2.833047881722e-03
-  max_abs  : 3.403320312500e-01
-  cosine   : 0.999521017075
+  mse      : 1.699969731271e-02
+  max_abs  : 7.402343750000e-01
+  cosine   : 0.997534811497
 
 layer15.fc2
-  mse      : 2.300439664396e-04
-  max_abs  : 1.445312500000e-01
-  cosine   : 0.992997050285
+  mse      : 1.030354993418e-03
+  max_abs  : 4.121093750000e-01
+  cosine   : 0.969036817551
 
 layer15.self_attn.k_proj
-  mse      : 3.857812378556e-03
-  max_abs  : 3.496093750000e-01
-  cosine   : 0.999747872353
+  mse      : 2.209404297173e-02
+  max_abs  : 8.574218750000e-01
+  cosine   : 0.998528778553
 
 layer15.self_attn.out_proj
-  mse      : 1.202326093335e-04
-  max_abs  : 1.306152343750e-01
-  cosine   : 0.990418791771
+  mse      : 5.566808395088e-04
+  max_abs  : 4.482421875000e-01
+  cosine   : 0.957886219025
 
 layer15.self_attn.q_proj
-  mse      : 4.094988573343e-03
-  max_abs  : 3.476562500000e-01
-  cosine   : 0.998510777950
+  mse      : 2.312933839858e-02
+  max_abs  : 8.557128906250e-01
+  cosine   : 0.991832613945
 
 layer15.self_attn.v_proj
-  mse      : 1.651015249081e-03
-  max_abs  : 2.607421875000e-01
-  cosine   : 0.996765971184
+  mse      : 8.653801865876e-03
+  max_abs  : 4.675292968750e-01
+  cosine   : 0.983706057072
 
 layer16.fc1
-  mse      : 3.473903751001e-03
-  max_abs  : 4.121093750000e-01
-  cosine   : 0.999449074268
+  mse      : 1.811356097460e-02
+  max_abs  : 8.378906250000e-01
+  cosine   : 0.997446298599
 
 layer16.fc2
-  mse      : 3.873690147884e-04
-  max_abs  : 1.608886718750e-01
-  cosine   : 0.991974353790
+  mse      : 1.603818614967e-03
+  max_abs  : 3.886718750000e-01
+  cosine   : 0.967811703682
 
 layer16.self_attn.k_proj
-  mse      : 4.103007260710e-03
-  max_abs  : 3.671875000000e-01
-  cosine   : 0.999736785889
+  mse      : 2.128155343235e-02
+  max_abs  : 6.679687500000e-01
+  cosine   : 0.998596429825
 
 layer16.self_attn.out_proj
-  mse      : 2.100859710481e-04
-  max_abs  : 8.251953125000e-02
-  cosine   : 0.991030454636
+  mse      : 8.176416158676e-04
+  max_abs  : 1.631355285645e-01
+  cosine   : 0.967031180859
 
 layer16.self_attn.q_proj
-  mse      : 4.615950863808e-03
-  max_abs  : 3.588867187500e-01
-  cosine   : 0.998298466206
+  mse      : 2.324945852160e-02
+  max_abs  : 8.984375000000e-01
+  cosine   : 0.991657137871
 
 layer16.self_attn.v_proj
-  mse      : 2.004006411880e-03
-  max_abs  : 2.770996093750e-01
-  cosine   : 0.997010827065
+  mse      : 1.033958699554e-02
+  max_abs  : 5.493164062500e-01
+  cosine   : 0.985086619854
 
 layer17.fc1
-  mse      : 3.730516182259e-03
-  max_abs  : 5.664062500000e-01
-  cosine   : 0.999441027641
+  mse      : 1.784632541239e-02
+  max_abs  : 7.929687500000e-01
+  cosine   : 0.997591674328
 
 layer17.fc2
-  mse      : 5.344338133000e-04
-  max_abs  : 1.562500000000e-01
-  cosine   : 0.993247270584
+  mse      : 2.057160483673e-03
+  max_abs  : 3.300781250000e-01
+  cosine   : 0.974020063877
 
 layer17.self_attn.k_proj
-  mse      : 4.151259548962e-03
-  max_abs  : 4.199218750000e-01
-  cosine   : 0.999755501747
+  mse      : 1.979429088533e-02
+  max_abs  : 7.246093750000e-01
+  cosine   : 0.998818337917
 
 layer17.self_attn.out_proj
-  mse      : 2.496079832781e-04
-  max_abs  : 1.514892578125e-01
-  cosine   : 0.993159592152
+  mse      : 9.686311823316e-04
+  max_abs  : 2.351074218750e-01
+  cosine   : 0.974357962608
 
 layer17.self_attn.q_proj
-  mse      : 4.737438634038e-03
-  max_abs  : 4.383544921875e-01
-  cosine   : 0.998226284981
+  mse      : 2.283344604075e-02
+  max_abs  : 8.572998046875e-01
+  cosine   : 0.991760671139
 
 layer17.self_attn.v_proj
-  mse      : 2.435262547806e-03
-  max_abs  : 2.802734375000e-01
-  cosine   : 0.996772706509
+  mse      : 1.150372345001e-02
+  max_abs  : 5.214843750000e-01
+  cosine   : 0.985130846500
 
 layer18.fc1
-  mse      : 4.593285731971e-03
-  max_abs  : 5.063476562500e-01
-  cosine   : 0.999377548695
+  mse      : 1.906432770193e-02
+  max_abs  : 8.359375000000e-01
+  cosine   : 0.997583925724
 
 layer18.fc2
-  mse      : 6.754693458788e-04
-  max_abs  : 2.148437500000e-01
-  cosine   : 0.993059515953
+  mse      : 2.377170370892e-03
+  max_abs  : 4.140625000000e-01
+  cosine   : 0.975563704967
 
 layer18.self_attn.k_proj
-  mse      : 4.182238597423e-03
-  max_abs  : 6.093750000000e-01
-  cosine   : 0.999698340893
+  mse      : 1.840770058334e-02
+  max_abs  : 6.573486328125e-01
+  cosine   : 0.998653531075
 
 layer18.self_attn.out_proj
-  mse      : 3.315609646961e-04
-  max_abs  : 1.833496093750e-01
-  cosine   : 0.990766704082
+  mse      : 1.090256730095e-03
+  max_abs  : 1.806640625000e-01
+  cosine   : 0.970949649811
 
 layer18.self_attn.q_proj
-  mse      : 4.718027077615e-03
-  max_abs  : 3.984375000000e-01
-  cosine   : 0.998308300972
+  mse      : 2.033227495849e-02
+  max_abs  : 7.910461425781e-01
+  cosine   : 0.992856264114
 
 layer18.self_attn.v_proj
-  mse      : 2.977519994602e-03
-  max_abs  : 3.720703125000e-01
-  cosine   : 0.996615767479
+  mse      : 1.287506986409e-02
+  max_abs  : 5.810546875000e-01
+  cosine   : 0.985704481602
 
 layer19.fc1
-  mse      : 4.997180309147e-03
-  max_abs  : 5.124511718750e-01
-  cosine   : 0.999368548393
+  mse      : 1.931343600154e-02
+  max_abs  : 9.033203125000e-01
+  cosine   : 0.997716903687
 
 layer19.fc2
-  mse      : 8.083753637038e-04
-  max_abs  : 3.195800781250e-01
-  cosine   : 0.992980659008
+  mse      : 2.685017185286e-03
+  max_abs  : 3.730468750000e-01
+  cosine   : 0.976688086987
 
 layer19.self_attn.k_proj
-  mse      : 4.894442390651e-03
-  max_abs  : 4.453125000000e-01
-  cosine   : 0.999664545059
+  mse      : 1.947425678372e-02
+  max_abs  : 7.343750000000e-01
+  cosine   : 0.998640418053
 
 layer19.self_attn.out_proj
-  mse      : 3.768270544242e-04
-  max_abs  : 1.101074218750e-01
-  cosine   : 0.991746306419
+  mse      : 1.254974515177e-03
+  max_abs  : 2.181701660156e-01
+  cosine   : 0.972579836845
 
 layer19.self_attn.q_proj
-  mse      : 5.200119689107e-03
-  max_abs  : 3.769531250000e-01
-  cosine   : 0.997999966145
+  mse      : 2.081547677517e-02
+  max_abs  : 9.111328125000e-01
+  cosine   : 0.992104887962
 
 layer19.self_attn.v_proj
-  mse      : 3.364413976669e-03
-  max_abs  : 4.609375000000e-01
-  cosine   : 0.996804356575
+  mse      : 1.373707875609e-02
+  max_abs  : 6.110839843750e-01
+  cosine   : 0.987074851990
 
 layer2.fc1
-  mse      : 1.065252465196e-03
-  max_abs  : 1.914062500000e-01
-  cosine   : 0.999306499958
+  mse      : 7.536262739450e-03
+  max_abs  : 5.859375000000e-01
+  cosine   : 0.996248185635
 
 layer2.fc2
-  mse      : 3.429259231780e-05
-  max_abs  : 6.171875000000e-01
-  cosine   : 0.999061226845
+  mse      : 1.727443450363e-04
+  max_abs  : 9.414062500000e-01
+  cosine   : 0.995331108570
 
 layer2.self_attn.k_proj
-  mse      : 6.589695694856e-04
-  max_abs  : 2.187500000000e-01
-  cosine   : 0.999969065189
+  mse      : 4.194027278572e-03
+  max_abs  : 5.050659179688e-01
+  cosine   : 0.999817669392
 
 layer2.self_attn.out_proj
-  mse      : 7.801761239534e-05
-  max_abs  : 1.029296875000e+00
-  cosine   : 0.996209621429
+  mse      : 4.471328284126e-04
+  max_abs  : 2.784179687500e+00
+  cosine   : 0.976064980030
 
 layer2.self_attn.q_proj
-  mse      : 7.178192026913e-04
-  max_abs  : 2.148437500000e-01
-  cosine   : 0.999717235565
+  mse      : 4.921546205878e-03
+  max_abs  : 5.014648437500e-01
+  cosine   : 0.998088121414
 
 layer2.self_attn.v_proj
-  mse      : 1.804189087125e-04
-  max_abs  : 9.863281250000e-02
-  cosine   : 0.993432343006
+  mse      : 7.723725284450e-04
+  max_abs  : 1.855468750000e-01
+  cosine   : 0.971590518951
 
 layer20.fc1
-  mse      : 5.424058530480e-03
-  max_abs  : 5.742187500000e-01
-  cosine   : 0.999403774738
+  mse      : 2.065943181515e-02
+  max_abs  : 1.070312500000e+00
+  cosine   : 0.997887492180
 
 layer20.fc2
-  mse      : 9.649735875428e-04
-  max_abs  : 2.436523437500e-01
-  cosine   : 0.993793249130
+  mse      : 3.277510171756e-03
+  max_abs  : 3.496093750000e-01
+  cosine   : 0.978945255280
 
 layer20.self_attn.k_proj
-  mse      : 4.598304163665e-03
-  max_abs  : 3.886718750000e-01
-  cosine   : 0.999595701694
+  mse      : 1.863019168377e-02
+  max_abs  : 8.066406250000e-01
+  cosine   : 0.998355925083
 
 layer20.self_attn.out_proj
-  mse      : 4.838543536607e-04
-  max_abs  : 2.136230468750e-01
-  cosine   : 0.993546545506
+  mse      : 1.821556827053e-03
+  max_abs  : 5.126953125000e-01
+  cosine   : 0.976419270039
 
 layer20.self_attn.q_proj
-  mse      : 4.902061074972e-03
-  max_abs  : 3.947753906250e-01
-  cosine   : 0.998162388802
+  mse      : 1.952518150210e-02
+  max_abs  : 7.940673828125e-01
+  cosine   : 0.992781043053
 
 layer20.self_attn.v_proj
-  mse      : 3.869377775118e-03
-  max_abs  : 3.978271484375e-01
-  cosine   : 0.997109949589
+  mse      : 1.560573186725e-02
+  max_abs  : 7.031250000000e-01
+  cosine   : 0.988472521305
 
 layer21.fc1
-  mse      : 5.769247654825e-03
-  max_abs  : 7.382812500000e-01
-  cosine   : 0.999423861504
+  mse      : 2.145772799850e-02
+  max_abs  : 1.144531250000e+00
+  cosine   : 0.997958481312
 
 layer21.fc2
-  mse      : 1.109194941819e-03
-  max_abs  : 3.452148437500e-01
-  cosine   : 0.994018316269
+  mse      : 3.779491642490e-03
+  max_abs  : 5.117187500000e-01
+  cosine   : 0.979552567005
 
 layer21.self_attn.k_proj
-  mse      : 4.703195765615e-03
-  max_abs  : 4.604492187500e-01
-  cosine   : 0.999537229538
+  mse      : 1.884797029197e-02
+  max_abs  : 7.700195312500e-01
+  cosine   : 0.998145341873
 
 layer21.self_attn.out_proj
-  mse      : 5.266873631626e-04
-  max_abs  : 2.583007812500e-01
-  cosine   : 0.992913126945
+  mse      : 1.728371134959e-03
+  max_abs  : 5.195312500000e-01
+  cosine   : 0.976632952690
 
 layer21.self_attn.q_proj
-  mse      : 5.182077642530e-03
-  max_abs  : 4.335937500000e-01
-  cosine   : 0.998006522655
+  mse      : 1.955611258745e-02
+  max_abs  : 7.570800781250e-01
+  cosine   : 0.992600560188
 
 layer21.self_attn.v_proj
-  mse      : 4.214530345052e-03
-  max_abs  : 5.332031250000e-01
-  cosine   : 0.997126996517
+  mse      : 1.672705449164e-02
+  max_abs  : 7.854003906250e-01
+  cosine   : 0.988743543625
 
 layer22.fc1
-  mse      : 6.140548735857e-03
-  max_abs  : 9.360351562500e-01
-  cosine   : 0.999438643456
+  mse      : 2.132304385304e-02
+  max_abs  : 1.280273437500e+00
+  cosine   : 0.998115539551
 
 layer22.fc2
-  mse      : 1.272591180168e-03
-  max_abs  : 3.520507812500e-01
-  cosine   : 0.993963837624
+  mse      : 4.002265166491e-03
+  max_abs  : 5.571289062500e-01
+  cosine   : 0.981067180634
 
 layer22.self_attn.k_proj
-  mse      : 4.195690620691e-03
-  max_abs  : 4.941406250000e-01
-  cosine   : 0.999482989311
+  mse      : 1.691768132150e-02
+  max_abs  : 8.471069335938e-01
+  cosine   : 0.997965216637
 
 layer22.self_attn.out_proj
-  mse      : 4.179176758043e-04
-  max_abs  : 2.886962890625e-01
-  cosine   : 0.993338227272
+  mse      : 1.485352753662e-03
+  max_abs  : 6.250000000000e-01
+  cosine   : 0.978441357613
 
 layer22.self_attn.q_proj
-  mse      : 4.766378551722e-03
-  max_abs  : 4.687500000000e-01
-  cosine   : 0.998192250729
+  mse      : 1.802325248718e-02
+  max_abs  : 7.834472656250e-01
+  cosine   : 0.993282914162
 
 layer22.self_attn.v_proj
-  mse      : 4.148279316723e-03
-  max_abs  : 4.291992187500e-01
-  cosine   : 0.997291505337
+  mse      : 1.533850096166e-02
+  max_abs  : 7.341308593750e-01
+  cosine   : 0.990100622177
 
 layer23.fc1
-  mse      : 7.110304664820e-03
-  max_abs  : 8.671875000000e-01
-  cosine   : 0.999425649643
+  mse      : 2.337698079646e-02
+  max_abs  : 1.603515625000e+00
+  cosine   : 0.998165547848
 
 layer23.fc2
-  mse      : 1.720153144561e-03
-  max_abs  : 2.886352539062e-01
-  cosine   : 0.993706822395
+  mse      : 4.796944092959e-03
+  max_abs  : 5.493164062500e-01
+  cosine   : 0.982504725456
 
 layer23.self_attn.k_proj
-  mse      : 4.061029292643e-03
-  max_abs  : 3.964843750000e-01
-  cosine   : 0.999516844749
+  mse      : 1.624498330057e-02
+  max_abs  : 6.757812500000e-01
+  cosine   : 0.998107790947
 
 layer23.self_attn.out_proj
-  mse      : 7.127390708774e-04
-  max_abs  : 2.729492187500e-01
-  cosine   : 0.995173215866
+  mse      : 2.473309868947e-03
+  max_abs  : 6.835937500000e-01
+  cosine   : 0.983177065849
 
 layer23.self_attn.q_proj
-  mse      : 4.666121210903e-03
-  max_abs  : 5.576171875000e-01
-  cosine   : 0.998212575912
+  mse      : 1.729074306786e-02
+  max_abs  : 6.992187500000e-01
+  cosine   : 0.993526577950
 
 layer23.self_attn.v_proj
-  mse      : 4.161465913057e-03
-  max_abs  : 5.185546875000e-01
-  cosine   : 0.997483611107
+  mse      : 1.526462100446e-02
+  max_abs  : 7.104492187500e-01
+  cosine   : 0.990896582603
 
 layer24.fc1
-  mse      : 7.925643585622e-03
-  max_abs  : 9.394531250000e-01
-  cosine   : 0.999456703663
+  mse      : 2.626068517566e-02
+  max_abs  : 1.898437500000e+00
+  cosine   : 0.998247861862
 
 layer24.fc2
-  mse      : 2.123654121533e-03
-  max_abs  : 4.238281250000e-01
-  cosine   : 0.993933260441
+  mse      : 5.656780209392e-03
+  max_abs  : 5.683593750000e-01
+  cosine   : 0.983917355537
 
 layer24.self_attn.k_proj
-  mse      : 3.880944568664e-03
-  max_abs  : 4.772949218750e-01
-  cosine   : 0.999494135380
+  mse      : 1.493368111551e-02
+  max_abs  : 6.215820312500e-01
+  cosine   : 0.998112559319
 
 layer24.self_attn.out_proj
-  mse      : 6.609652191401e-04
-  max_abs  : 1.469726562500e-01
-  cosine   : 0.995377063751
+  mse      : 2.336923498660e-03
+  max_abs  : 4.501953125000e-01
+  cosine   : 0.983686327934
 
 layer24.self_attn.q_proj
-  mse      : 4.612077958882e-03
-  max_abs  : 5.815429687500e-01
-  cosine   : 0.998072147369
+  mse      : 1.589166931808e-02
+  max_abs  : 6.914062500000e-01
+  cosine   : 0.993526518345
 
 layer24.self_attn.v_proj
-  mse      : 4.679949488491e-03
-  max_abs  : 4.844970703125e-01
-  cosine   : 0.997571766376
+  mse      : 1.642952300608e-02
+  max_abs  : 7.375488281250e-01
+  cosine   : 0.991631627083
 
 layer25.fc1
-  mse      : 8.155910298228e-03
-  max_abs  : 9.677734375000e-01
-  cosine   : 0.999473512173
+  mse      : 2.603655867279e-02
+  max_abs  : 1.376953125000e+00
+  cosine   : 0.998368680477
 
 layer25.fc2
-  mse      : 2.490126760677e-03
-  max_abs  : 4.521484375000e-01
-  cosine   : 0.994374155998
+  mse      : 6.593252532184e-03
+  max_abs  : 8.076171875000e-01
+  cosine   : 0.985111951828
 
 layer25.self_attn.k_proj
-  mse      : 3.939853981137e-03
-  max_abs  : 4.329833984375e-01
-  cosine   : 0.999327778816
+  mse      : 1.402241364121e-02
+  max_abs  : 6.914062500000e-01
+  cosine   : 0.997634172440
 
 layer25.self_attn.out_proj
-  mse      : 7.123458781280e-04
-  max_abs  : 2.250976562500e-01
-  cosine   : 0.993824958801
+  mse      : 2.230294281617e-03
+  max_abs  : 2.844238281250e-01
+  cosine   : 0.980530679226
 
 layer25.self_attn.q_proj
-  mse      : 4.788302816451e-03
-  max_abs  : 4.645996093750e-01
-  cosine   : 0.998285531998
+  mse      : 1.614878699183e-02
+  max_abs  : 6.386718750000e-01
+  cosine   : 0.994370937347
 
 layer25.self_attn.v_proj
-  mse      : 5.398420616984e-03
-  max_abs  : 6.323852539062e-01
-  cosine   : 0.997691988945
+  mse      : 1.795209757984e-02
+  max_abs  : 7.379760742188e-01
+  cosine   : 0.992451667786
 
 layer26.fc1
-  mse      : 9.093247354031e-03
-  max_abs  : 1.417968750000e+00
-  cosine   : 0.999462187290
+  mse      : 2.697641961277e-02
+  max_abs  : 2.304199218750e+00
+  cosine   : 0.998436868191
 
 layer26.fc2
-  mse      : 3.238318953663e-03
-  max_abs  : 4.863281250000e-01
-  cosine   : 0.994330525398
+  mse      : 8.387860842049e-03
+  max_abs  : 6.289672851562e-01
+  cosine   : 0.985327661037
 
 layer26.self_attn.k_proj
-  mse      : 3.841269528493e-03
-  max_abs  : 4.267578125000e-01
-  cosine   : 0.999393701553
+  mse      : 1.396337244660e-02
+  max_abs  : 6.513671875000e-01
+  cosine   : 0.997831583023
 
 layer26.self_attn.out_proj
-  mse      : 9.578439057805e-04
-  max_abs  : 4.516601562500e-01
-  cosine   : 0.994831204414
+  mse      : 3.046967322007e-03
+  max_abs  : 6.494140625000e-01
+  cosine   : 0.983582198620
 
 layer26.self_attn.q_proj
-  mse      : 4.478020593524e-03
-  max_abs  : 4.443359375000e-01
-  cosine   : 0.998381435871
+  mse      : 1.488221995533e-02
+  max_abs  : 7.871093750000e-01
+  cosine   : 0.994736194611
 
 layer26.self_attn.v_proj
-  mse      : 5.693810060620e-03
-  max_abs  : 5.019531250000e-01
-  cosine   : 0.997828125954
+  mse      : 1.833860576153e-02
+  max_abs  : 8.876953125000e-01
+  cosine   : 0.993067145348
 
 layer27.fc1
-  mse      : 9.236673824489e-03
-  max_abs  : 1.066406250000e+00
-  cosine   : 0.999475300312
+  mse      : 2.685871347785e-02
+  max_abs  : 1.688964843750e+00
+  cosine   : 0.998492121696
 
 layer27.fc2
-  mse      : 3.603172721341e-03
-  max_abs  : 5.112304687500e-01
-  cosine   : 0.994798302650
+  mse      : 9.393352083862e-03
+  max_abs  : 9.199218750000e-01
+  cosine   : 0.986483752728
 
 layer27.self_attn.k_proj
-  mse      : 4.345849156380e-03
-  max_abs  : 4.404296875000e-01
-  cosine   : 0.999528229237
+  mse      : 1.528019737452e-02
+  max_abs  : 6.699218750000e-01
+  cosine   : 0.998379707336
 
 layer27.self_attn.out_proj
-  mse      : 1.464177388698e-03
-  max_abs  : 4.317626953125e-01
-  cosine   : 0.994405984879
+  mse      : 4.434422124177e-03
+  max_abs  : 9.453125000000e-01
+  cosine   : 0.982888340950
 
 layer27.self_attn.q_proj
-  mse      : 4.616931080818e-03
-  max_abs  : 7.109375000000e-01
-  cosine   : 0.998471379280
+  mse      : 1.515160314739e-02
+  max_abs  : 6.850585937500e-01
+  cosine   : 0.995075225830
 
 layer27.self_attn.v_proj
-  mse      : 6.710754707456e-03
-  max_abs  : 8.051757812500e-01
-  cosine   : 0.997674584389
+  mse      : 2.020427398384e-02
+  max_abs  : 9.254150390625e-01
+  cosine   : 0.993054807186
 
 layer28.fc1
-  mse      : 8.860327303410e-03
-  max_abs  : 1.130859375000e+00
-  cosine   : 0.999470770359
+  mse      : 2.550883404911e-02
+  max_abs  : 1.176269531250e+00
+  cosine   : 0.998496413231
 
 layer28.fc2
-  mse      : 4.048351664096e-03
-  max_abs  : 1.109375000000e+00
-  cosine   : 0.995089650154
+  mse      : 1.078875735402e-02
+  max_abs  : 9.765625000000e-01
+  cosine   : 0.986963868141
 
 layer28.self_attn.k_proj
-  mse      : 4.586772993207e-03
-  max_abs  : 5.468750000000e-01
-  cosine   : 0.999626755714
+  mse      : 1.559904869646e-02
+  max_abs  : 7.265625000000e-01
+  cosine   : 0.998743057251
 
 layer28.self_attn.out_proj
-  mse      : 8.820831426419e-04
-  max_abs  : 6.142578125000e-01
-  cosine   : 0.994198501110
+  mse      : 3.277737181634e-03
+  max_abs  : 9.169921875000e-01
+  cosine   : 0.978398203850
 
 layer28.self_attn.q_proj
-  mse      : 4.922389052808e-03
-  max_abs  : 4.570312500000e-01
-  cosine   : 0.998803675175
+  mse      : 1.570793427527e-02
+  max_abs  : 7.949218750000e-01
+  cosine   : 0.996254920959
 
 layer28.self_attn.v_proj
-  mse      : 7.338973693550e-03
-  max_abs  : 6.748046875000e-01
-  cosine   : 0.997618377209
+  mse      : 2.232690714300e-02
+  max_abs  : 8.808593750000e-01
+  cosine   : 0.992782354355
 
 layer29.fc1
-  mse      : 8.386896923184e-03
-  max_abs  : 9.537429809570e-01
-  cosine   : 0.999471127987
+  mse      : 2.455463074148e-02
+  max_abs  : 1.664062500000e+00
+  cosine   : 0.998466074467
 
 layer29.fc2
-  mse      : 3.995358943939e-03
-  max_abs  : 6.699218750000e-01
-  cosine   : 0.995700657368
+  mse      : 1.094490848482e-02
+  max_abs  : 1.060546875000e+00
+  cosine   : 0.988257646561
 
 layer29.self_attn.k_proj
-  mse      : 4.956755787134e-03
-  max_abs  : 5.390625000000e-01
-  cosine   : 0.999802052975
+  mse      : 1.641449891031e-02
+  max_abs  : 7.958984375000e-01
+  cosine   : 0.999348521233
 
 layer29.self_attn.out_proj
-  mse      : 1.179086626507e-03
-  max_abs  : 5.117187500000e-01
-  cosine   : 0.995903074741
+  mse      : 3.714928170666e-03
+  max_abs  : 7.744140625000e-01
+  cosine   : 0.987287044525
 
 layer29.self_attn.q_proj
-  mse      : 5.793452262878e-03
-  max_abs  : 4.993896484375e-01
-  cosine   : 0.999123752117
+  mse      : 1.827006973326e-02
+  max_abs  : 7.675781250000e-01
+  cosine   : 0.997290849686
 
 layer29.self_attn.v_proj
-  mse      : 7.974667474627e-03
-  max_abs  : 6.772460937500e-01
-  cosine   : 0.997730016708
+  mse      : 2.373443543911e-02
+  max_abs  : 7.773437500000e-01
+  cosine   : 0.993269085884
 
 layer3.fc1
-  mse      : 1.087909098715e-03
-  max_abs  : 2.246093750000e-01
-  cosine   : 0.999408185482
+  mse      : 5.336889531463e-03
+  max_abs  : 5.292968750000e-01
+  cosine   : 0.997229814529
 
 layer3.fc2
-  mse      : 1.263673038920e-05
-  max_abs  : 2.265625000000e-01
-  cosine   : 0.998463988304
+  mse      : 6.675809709122e-05
+  max_abs  : 4.531250000000e-01
+  cosine   : 0.991615533829
 
 layer3.self_attn.k_proj
-  mse      : 8.847953286022e-04
-  max_abs  : 2.109375000000e-01
-  cosine   : 0.999959945679
+  mse      : 5.675976630300e-03
+  max_abs  : 6.914062500000e-01
+  cosine   : 0.999758183956
 
 layer3.self_attn.out_proj
-  mse      : 1.118011423387e-04
-  max_abs  : 1.264648437500e+00
-  cosine   : 0.961347222328
+  mse      : 6.414681556635e-04
+  max_abs  : 3.927734375000e+00
+  cosine   : 0.802836179733
 
 layer3.self_attn.q_proj
-  mse      : 1.032453146763e-03
-  max_abs  : 2.788085937500e-01
-  cosine   : 0.999685287476
+  mse      : 8.017092943192e-03
+  max_abs  : 6.386718750000e-01
+  cosine   : 0.997560024261
 
 layer3.self_attn.v_proj
-  mse      : 2.398558572168e-04
-  max_abs  : 8.361816406250e-02
-  cosine   : 0.994706392288
+  mse      : 1.028297119774e-03
+  max_abs  : 2.387695312500e-01
+  cosine   : 0.977145671844
 
 layer30.fc1
-  mse      : 8.090526796877e-03
-  max_abs  : 8.691406250000e-01
-  cosine   : 0.999460339546
+  mse      : 2.344962768257e-02
+  max_abs  : 1.313964843750e+00
+  cosine   : 0.998449087143
 
 layer30.fc2
-  mse      : 3.961613401771e-03
-  max_abs  : 8.632812500000e-01
-  cosine   : 0.996170341969
+  mse      : 1.105302292854e-02
+  max_abs  : 1.890625000000e+00
+  cosine   : 0.989318907261
 
 layer30.self_attn.k_proj
-  mse      : 4.886225331575e-03
-  max_abs  : 4.746093750000e-01
-  cosine   : 0.999857187271
+  mse      : 1.554389577359e-02
+  max_abs  : 6.367187500000e-01
+  cosine   : 0.999550104141
 
 layer30.self_attn.out_proj
-  mse      : 1.102567999624e-03
-  max_abs  : 5.078125000000e-01
-  cosine   : 0.988700151443
+  mse      : 3.628273261711e-03
+  max_abs  : 1.405273437500e+00
+  cosine   : 0.964012026787
 
 layer30.self_attn.q_proj
-  mse      : 6.357962731272e-03
-  max_abs  : 6.660156250000e-01
-  cosine   : 0.999213933945
+  mse      : 1.934709772468e-02
+  max_abs  : 8.496093750000e-01
+  cosine   : 0.997620463371
 
 layer30.self_attn.v_proj
-  mse      : 8.283539675176e-03
-  max_abs  : 7.376708984375e-01
-  cosine   : 0.997783362865
+  mse      : 2.472822554410e-02
+  max_abs  : 8.558959960938e-01
+  cosine   : 0.993411004543
 
 layer31.fc1
-  mse      : 7.365804631263e-03
-  max_abs  : 1.109375000000e+00
-  cosine   : 0.999604761600
+  mse      : 2.293977513909e-02
+  max_abs  : 1.812500000000e+00
+  cosine   : 0.998796582222
 
 layer31.fc2
-  mse      : 2.802770351991e-03
-  max_abs  : 1.562500000000e+00
-  cosine   : 0.997256338596
+  mse      : 8.290321566164e-03
+  max_abs  : 2.953125000000e+00
+  cosine   : 0.991853237152
 
 layer31.self_attn.k_proj
-  mse      : 4.634293727577e-03
-  max_abs  : 4.941406250000e-01
-  cosine   : 0.999887347221
+  mse      : 1.515965629369e-02
+  max_abs  : 8.046875000000e-01
+  cosine   : 0.999641239643
 
 layer31.self_attn.out_proj
-  mse      : 2.594527322799e-03
-  max_abs  : 1.093750000000e+00
-  cosine   : 0.993464946747
+  mse      : 9.313218295574e-03
+  max_abs  : 2.380859375000e+00
+  cosine   : 0.976139426231
 
 layer31.self_attn.q_proj
-  mse      : 6.617411971092e-03
-  max_abs  : 6.328125000000e-01
-  cosine   : 0.999489426613
+  mse      : 2.054127492011e-02
+  max_abs  : 1.042968750000e+00
+  cosine   : 0.998421728611
 
 layer31.self_attn.v_proj
-  mse      : 7.741499692202e-03
-  max_abs  : 7.128906250000e-01
-  cosine   : 0.997824668884
+  mse      : 2.386151999235e-02
+  max_abs  : 7.919921875000e-01
+  cosine   : 0.993343591690
 
 layer4.fc1
-  mse      : 1.180146820843e-03
-  max_abs  : 2.080078125000e-01
-  cosine   : 0.999486327171
+  mse      : 5.376729182899e-03
+  max_abs  : 5.515136718750e-01
+  cosine   : 0.997743606567
 
 layer4.fc2
-  mse      : 1.535413866804e-05
-  max_abs  : 1.386718750000e-01
-  cosine   : 0.997338771820
+  mse      : 6.879843567731e-05
+  max_abs  : 4.069824218750e-01
+  cosine   : 0.988146603107
 
 layer4.self_attn.k_proj
-  mse      : 7.107334095053e-04
-  max_abs  : 1.940307617188e-01
-  cosine   : 0.999944567680
+  mse      : 4.998378921300e-03
+  max_abs  : 6.445312500000e-01
+  cosine   : 0.999638676643
 
 layer4.self_attn.out_proj
-  mse      : 6.211661093403e-05
-  max_abs  : 9.570312500000e-01
-  cosine   : 0.959096312523
+  mse      : 3.443114983384e-04
+  max_abs  : 2.245117187500e+00
+  cosine   : 0.781031250954
 
 layer4.self_attn.q_proj
-  mse      : 8.387452107854e-04
-  max_abs  : 1.923828125000e-01
-  cosine   : 0.999821305275
+  mse      : 6.534957326949e-03
+  max_abs  : 5.511016845703e-01
+  cosine   : 0.998649895191
 
 layer4.self_attn.v_proj
-  mse      : 2.852382021956e-04
-  max_abs  : 9.960937500000e-02
-  cosine   : 0.994531035423
+  mse      : 1.247434061952e-03
+  max_abs  : 2.639312744141e-01
+  cosine   : 0.976298689842
 
 layer5.fc1
-  mse      : 1.119004678912e-03
-  max_abs  : 3.085937500000e-01
-  cosine   : 0.999616444111
+  mse      : 6.963287480175e-03
+  max_abs  : 6.279296875000e-01
+  cosine   : 0.997778117657
 
 layer5.fc2
-  mse      : 3.002841367561e-05
-  max_abs  : 6.250000000000e-02
-  cosine   : 0.996059477329
+  mse      : 1.717877603369e-04
+  max_abs  : 3.315429687500e-01
+  cosine   : 0.978317022324
 
 layer5.self_attn.k_proj
-  mse      : 9.416652610525e-04
-  max_abs  : 2.402343750000e-01
-  cosine   : 0.999947607517
+  mse      : 6.612885277718e-03
+  max_abs  : 6.054687500000e-01
+  cosine   : 0.999655067921
 
 layer5.self_attn.out_proj
-  mse      : 4.118007927900e-05
-  max_abs  : 8.944702148438e-02
-  cosine   : 0.976861059666
+  mse      : 1.724048925098e-04
+  max_abs  : 3.242187500000e-01
+  cosine   : 0.908407270908
 
 layer5.self_attn.q_proj
-  mse      : 1.336764427833e-03
-  max_abs  : 2.496337890625e-01
-  cosine   : 0.999753057957
+  mse      : 9.689981117845e-03
+  max_abs  : 6.301269531250e-01
+  cosine   : 0.998212039471
 
 layer5.self_attn.v_proj
-  mse      : 3.676978813019e-04
-  max_abs  : 1.281738281250e-01
-  cosine   : 0.995287954807
+  mse      : 1.680711866356e-03
+  max_abs  : 2.319946289062e-01
+  cosine   : 0.979065239429
 
 layer6.fc1
-  mse      : 1.546637387946e-03
-  max_abs  : 2.226562500000e-01
-  cosine   : 0.999540627003
+  mse      : 9.353918954730e-03
+  max_abs  : 7.265625000000e-01
+  cosine   : 0.997516095638
 
 layer6.fc2
-  mse      : 5.145815521246e-05
-  max_abs  : 4.760742187500e-02
-  cosine   : 0.995943307877
+  mse      : 2.769757702481e-04
+  max_abs  : 1.191406250000e-01
+  cosine   : 0.980006098747
 
 layer6.self_attn.k_proj
-  mse      : 1.221872866154e-03
-  max_abs  : 2.343750000000e-01
-  cosine   : 0.999952077866
+  mse      : 1.054944843054e-02
+  max_abs  : 7.500000000000e-01
+  cosine   : 0.999621748924
 
 layer6.self_attn.out_proj
-  mse      : 4.247982360539e-05
-  max_abs  : 5.249023437500e-02
-  cosine   : 0.978227674961
+  mse      : 1.432873250451e-04
+  max_abs  : 1.482238769531e-01
+  cosine   : 0.927297890186
 
 layer6.self_attn.q_proj
-  mse      : 1.874071080238e-03
-  max_abs  : 2.910156250000e-01
-  cosine   : 0.999624967575
+  mse      : 1.410605479032e-02
+  max_abs  : 8.720703125000e-01
+  cosine   : 0.997183084488
 
 layer6.self_attn.v_proj
-  mse      : 4.559782100841e-04
-  max_abs  : 1.132812500000e-01
-  cosine   : 0.995646774769
+  mse      : 2.240293892100e-03
+  max_abs  : 3.294677734375e-01
+  cosine   : 0.979720652103
 
 layer7.fc1
-  mse      : 1.732444972731e-03
-  max_abs  : 2.929687500000e-01
-  cosine   : 0.999579191208
+  mse      : 1.250299252570e-02
+  max_abs  : 8.867187500000e-01
+  cosine   : 0.997561693192
 
 layer7.fc2
-  mse      : 7.073059532559e-05
-  max_abs  : 6.146240234375e-02
-  cosine   : 0.994332075119
+  mse      : 3.096322761849e-04
+  max_abs  : 1.152343750000e-01
+  cosine   : 0.976697325706
 
 layer7.self_attn.k_proj
-  mse      : 1.279165735468e-03
-  max_abs  : 2.353820800781e-01
-  cosine   : 0.999956607819
+  mse      : 1.119507011026e-02
+  max_abs  : 6.328125000000e-01
+  cosine   : 0.999660968781
 
 layer7.self_attn.out_proj
-  mse      : 5.380995571613e-05
-  max_abs  : 4.782104492188e-02
-  cosine   : 0.984890103340
+  mse      : 2.201031020377e-04
+  max_abs  : 1.193847656250e-01
+  cosine   : 0.939989447594
 
 layer7.self_attn.q_proj
-  mse      : 2.283716108650e-03
-  max_abs  : 3.105468750000e-01
-  cosine   : 0.999442934990
+  mse      : 1.575183123350e-02
+  max_abs  : 7.453613281250e-01
+  cosine   : 0.996186733246
 
 layer7.self_attn.v_proj
-  mse      : 5.568613996729e-04
-  max_abs  : 1.533203125000e-01
-  cosine   : 0.995846867561
+  mse      : 3.003310644999e-03
+  max_abs  : 3.916015625000e-01
+  cosine   : 0.979432404041
 
 layer8.fc1
-  mse      : 1.973599428311e-03
-  max_abs  : 3.991699218750e-01
-  cosine   : 0.999562501907
+  mse      : 1.674461923540e-02
+  max_abs  : 8.125000000000e-01
+  cosine   : 0.997465312481
 
 layer8.fc2
-  mse      : 8.543588774046e-05
-  max_abs  : 6.587982177734e-02
-  cosine   : 0.993931651115
+  mse      : 5.078647518530e-04
+  max_abs  : 1.457214355469e-01
+  cosine   : 0.972320079803
 
 layer8.self_attn.k_proj
-  mse      : 2.082808176056e-03
-  max_abs  : 3.242187500000e-01
-  cosine   : 0.999940991402
+  mse      : 1.779944077134e-02
+  max_abs  : 7.890625000000e-01
+  cosine   : 0.999582648277
 
 layer8.self_attn.out_proj
-  mse      : 5.805126420455e-05
-  max_abs  : 8.295440673828e-02
-  cosine   : 0.981162667274
+  mse      : 2.221342874691e-04
+  max_abs  : 2.211456298828e-01
+  cosine   : 0.935811340809
 
 layer8.self_attn.q_proj
-  mse      : 3.455118974671e-03
-  max_abs  : 3.676757812500e-01
-  cosine   : 0.998514473438
+  mse      : 2.222882956266e-02
+  max_abs  : 9.135742187500e-01
+  cosine   : 0.990692794323
 
 layer8.self_attn.v_proj
-  mse      : 6.768829771318e-04
-  max_abs  : 1.455078125000e-01
-  cosine   : 0.995932102203
+  mse      : 3.694968298078e-03
+  max_abs  : 3.879394531250e-01
+  cosine   : 0.980198204517
 
 layer9.fc1
-  mse      : 2.484986325726e-03
-  max_abs  : 3.496093750000e-01
-  cosine   : 0.999527037144
+  mse      : 2.246178500354e-02
+  max_abs  : 9.179687500000e-01
+  cosine   : 0.997424542904
 
 layer9.fc2
-  mse      : 1.010593696265e-04
-  max_abs  : 7.974243164062e-02
-  cosine   : 0.995106458664
+  mse      : 5.656332359649e-04
+  max_abs  : 2.217407226562e-01
+  cosine   : 0.975100815296
 
 layer9.self_attn.k_proj
-  mse      : 2.500959672034e-03
-  max_abs  : 2.744140625000e-01
-  cosine   : 0.999922513962
+  mse      : 2.018572390079e-02
+  max_abs  : 9.492187500000e-01
+  cosine   : 0.999470114708
 
 layer9.self_attn.out_proj
-  mse      : 6.081455285312e-05
-  max_abs  : 1.001739501953e-01
-  cosine   : 0.984854757786
+  mse      : 2.837081556208e-04
+  max_abs  : 2.237548828125e-01
+  cosine   : 0.937540948391
 
 layer9.self_attn.q_proj
-  mse      : 3.601498901844e-03
-  max_abs  : 3.339843750000e-01
-  cosine   : 0.998541593552
+  mse      : 2.375472337008e-02
+  max_abs  : 8.916015625000e-01
+  cosine   : 0.990815758705
 
 layer9.self_attn.v_proj
-  mse      : 7.770748925395e-04
-  max_abs  : 1.713714599609e-01
-  cosine   : 0.996237516403
+  mse      : 4.410200286657e-03
+  max_abs  : 4.711914062500e-01
+  cosine   : 0.981695652008
 
 [Modified]
-modified_ppl : 10.88252354
-ppl_diff     : 2.221870422363e-02
-relative_diff: 2.045863773292e-03
+modified_ppl : 10.89140797
+ppl_diff     : 3.110313415527e-02
+relative_diff: 2.863928281489e-03
 

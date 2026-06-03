@@ -1,9 +1,9 @@
 ### 이 파일은 run_grouped_ppl_test.py 기반의 코드를 가져와서 quant를 추가해 ppl 평가하는 코드
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 
 import argparse
 import random
+import sys
 from pathlib import Path
 from tqdm import tqdm
 import numpy as np
@@ -12,6 +12,20 @@ import torch.nn as nn
 import torch.nn.functional as F
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
+# OPT/LLaMA 분기와 WikiText2/C4 dataset 분기를 위해 phase3의 model_adapter / eval_utils를 그대로 재사용 (코드 중복 회피).
+_PHASE3_DIR = str(Path(__file__).resolve().parent.parent / "phase3")
+if _PHASE3_DIR not in sys.path:
+    sys.path.insert(0, _PHASE3_DIR)
+
+from model_adapter import (
+    get_decoder_layers,
+    get_model_device,
+    get_named_linear,
+    set_named_linear,
+)
+from model_configs import get_module_names
+from eval_utils import load_eval_tokens
 
 
 # =========================================================
@@ -29,8 +43,9 @@ def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
 
-def get_model_main_device(model):
-    return model.model.decoder.embed_tokens.weight.device
+def get_model_main_device(model, arch):
+    # OPT/LLaMA embed_tokens 경로가 달라 phase3 model_adapter.get_model_device로 위임.
+    return get_model_device(model, arch)
 
 
 def save_txt(lines, path):
@@ -565,54 +580,30 @@ class ExperimentLinear(nn.Module):
 # 4. Module Access / Replacement
 # =========================================================
 def get_named_linear_module(layer, module_name: str):
-    mapping = {
-        "self_attn.q_proj": layer.self_attn.q_proj,
-        "self_attn.k_proj": layer.self_attn.k_proj,
-        "self_attn.v_proj": layer.self_attn.v_proj,
-        "self_attn.out_proj": layer.self_attn.out_proj,
-        "fc1": layer.fc1,
-        "fc2": layer.fc2,
-    }
-    if module_name not in mapping:
-        raise ValueError(f"Unsupported module_name: {module_name}")
-    return mapping[module_name]
+    # OPT(out_proj, fc1, fc2) / LLaMA(o_proj, gate_proj, up_proj, down_proj) 모두 지원하도록 phase3에 위임.
+    return get_named_linear(layer, module_name)
 
 
 def set_named_linear_module(layer, module_name: str, new_module: nn.Module):
-    if module_name == "self_attn.q_proj":
-        layer.self_attn.q_proj = new_module
-    elif module_name == "self_attn.k_proj":
-        layer.self_attn.k_proj = new_module
-    elif module_name == "self_attn.v_proj":
-        layer.self_attn.v_proj = new_module
-    elif module_name == "self_attn.out_proj":
-        layer.self_attn.out_proj = new_module
-    elif module_name == "fc1":
-        layer.fc1 = new_module
-    elif module_name == "fc2":
-        layer.fc2 = new_module
-    else:
-        raise ValueError(f"Unsupported module_name: {module_name}")
+    set_named_linear(layer, module_name, new_module)
 
 
-def parse_module_names(s: str):
+def parse_module_names(s: str, arch: str):
+    # arch별로 유효한 모듈명 집합이 다르므로 arch 인자로 검증.
+    valid = set(get_module_names(arch))
     names = [x.strip() for x in s.split(",") if len(x.strip()) > 0]
-    valid = {
-        "self_attn.q_proj",
-        "self_attn.k_proj",
-        "self_attn.v_proj",
-        "self_attn.out_proj",
-        "fc1",
-        "fc2",
-    }
     for n in names:
         if n not in valid:
-            raise ValueError(f"Invalid module name: {n}")
+            raise ValueError(
+                f"Invalid module name '{n}' for arch '{arch}'. Valid: {sorted(valid)}"
+            )
     return names
 
 
-def resolve_target_layers(model, replace_scope: str, one_layer_idx: int):
-    num_layers = len(model.model.decoder.layers)
+def resolve_target_layers(model, arch: str, replace_scope: str, one_layer_idx: int):
+    # OPT는 model.model.decoder.layers, LLaMA는 model.model.layers라 phase3 헬퍼 사용.
+    layers = get_decoder_layers(model, arch)
+    num_layers = len(layers)
 
     if replace_scope == "one":
         if one_layer_idx < 0 or one_layer_idx >= num_layers:
@@ -626,6 +617,7 @@ def resolve_target_layers(model, replace_scope: str, one_layer_idx: int):
 
 def replace_modules_with_experiment_linear(
     model,
+    arch,
     layer_indices,
     module_names,
     enable_grouping,
@@ -646,8 +638,10 @@ def replace_modules_with_experiment_linear(
 ):
     replaced_names = []
 
+    # OPT/LLaMA 양쪽 모두 layers 경로가 다르므로 phase3 헬퍼로 조회.
+    layers = get_decoder_layers(model, arch)
     for layer_idx in layer_indices:
-        layer = model.model.decoder.layers[layer_idx]
+        layer = layers[layer_idx]
         for module_name in module_names:
             old_module = get_named_linear_module(layer, module_name)
 
@@ -679,7 +673,7 @@ def replace_modules_with_experiment_linear(
 # =========================================================
 # 5. Probe 비교용 Hook
 # =========================================================
-def collect_module_outputs(model, tokenizer, text, target_layer_indices, target_module_names):
+def collect_module_outputs(model, arch, tokenizer, text, target_layer_indices, target_module_names):
     outputs_dict = {}
     hook_handles = []
 
@@ -692,15 +686,17 @@ def collect_module_outputs(model, tokenizer, text, target_layer_indices, target_
             outputs_dict[name] = x.detach().float().cpu()
         return hook
 
+    # arch별 layers 경로 차이 → phase3 헬퍼로 조회.
+    layers = get_decoder_layers(model, arch)
     for layer_idx in target_layer_indices:
-        layer = model.model.decoder.layers[layer_idx]
+        layer = layers[layer_idx]
         for module_name in target_module_names:
             module = get_named_linear_module(layer, module_name)
             name = f"layer{layer_idx}.{module_name}"
             h = module.register_forward_hook(make_hook(name))
             hook_handles.append(h)
 
-    device = get_model_main_device(model)
+    device = get_model_main_device(model, arch)
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=128)
     inputs = {k: v.to(device) for k, v in inputs.items()}
 
@@ -797,6 +793,20 @@ def compute_perplexity(model, testenc, dev):
 # =========================================================
 # 7. Main
 # =========================================================
+def _resolve_arch(model_id: str, arch_arg: str) -> str:
+    # --arch auto일 때 model_id 문자열에서 arch를 추론. 명시되면 그대로 사용.
+    if arch_arg != "auto":
+        return arch_arg
+    mid = model_id.lower()
+    if "llama" in mid:
+        return "llama"
+    if "opt" in mid:
+        return "opt"
+    raise ValueError(
+        f"arch=auto이고 model_id='{model_id}'에서 arch를 추론할 수 없습니다. --arch opt/llama 명시."
+    )
+
+
 def main():
     parser = argparse.ArgumentParser()
 
@@ -810,8 +820,8 @@ def main():
     parser.add_argument(
         "--target_modules",
         type=str,
-        default="fc1",
-        help="Comma-separated module names, e.g. fc1 or self_attn.q_proj,fc1",
+        default=None,
+        help="Comma-separated module names. 미지정 시 arch에 따라 전체 Linear 모듈 사용.",
     )
 
     # exact grouping
@@ -858,6 +868,29 @@ def main():
 
     # eval
     parser.add_argument("--eval_split", type=str, default="test")
+    # arch / dataset 일반화: OPT 외에 LLaMA, WikiText2 외에 C4 평가 지원을 위해 추가.
+    parser.add_argument(
+        "--arch",
+        type=str,
+        default="auto",
+        choices=["auto", "opt", "llama"],
+        help="auto는 model_id 문자열에서 추론 (llama/opt 키워드).",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="wikitext2",
+        choices=["wikitext2", "c4", "c4_new", "c4_omni"],
+        help="phase3 eval_utils.load_eval_tokens와 동일한 dataset 키.",
+    )
+    parser.add_argument("--eval_nsamples", type=int, default=256, help="C4 계열에서만 의미 있음.")
+    parser.add_argument("--eval_seqlen", type=int, default=2048, help="PPL chunk 길이 (model.seqlen으로 설정).")
+    parser.add_argument(
+        "--c4_cache_dir",
+        type=str,
+        default="/home2/juneyeop/opt67/phase3/cache",
+        help="c4_omni가 사용할 cache_dir. c4/c4_new는 arrow 파일 경로 (phase3 기본값).",
+    )
 
     # probe
     parser.add_argument("--do_probe_compare", action="store_true")
@@ -867,15 +900,24 @@ def main():
     set_seed(args.seed)
     ensure_dir(args.output_dir)
 
-    module_names = parse_module_names(args.target_modules)
+    # arch는 model_id에서 추론하거나 명시값 사용. module_names 검증/기본값을 위해 먼저 결정.
+    arch = _resolve_arch(args.model_id, args.arch)
+
+    # target_modules 미지정 시 arch별 전체 Linear 모듈을 default로 사용.
+    target_modules_str = args.target_modules if args.target_modules else ",".join(get_module_names(arch))
+    module_names = parse_module_names(target_modules_str, arch)
 
     lines = []
     lines.append("[Config]")
     lines.append(f"model_id           : {args.model_id}")
+    lines.append(f"arch               : {arch}")
     lines.append(f"replace_scope      : {args.replace_scope}")
     lines.append(f"one_layer_idx      : {args.one_layer_idx}")
     lines.append(f"target_modules     : {module_names}")
+    lines.append(f"dataset            : {args.dataset}")
     lines.append(f"eval_split         : {args.eval_split}")
+    lines.append(f"eval_nsamples      : {args.eval_nsamples}")
+    lines.append(f"eval_seqlen        : {args.eval_seqlen}")
     lines.append("")
     lines.append("[Experiment Switches]")
     lines.append(f"enable_grouping    : {args.enable_grouping}")
@@ -893,8 +935,16 @@ def main():
     lines.append(f"quant_impl         : {args.quant_impl}")
     lines.append("")
 
-    print("[1] Loading WikiText2 + tokenizer...")
-    tokenizer, testenc = load_wikitext2_testenc(args.model_id, split=args.eval_split)
+    print(f"[1] Loading {args.dataset} ({args.eval_split}) + tokenizer...")
+    # phase3 eval_utils로 통합: wikitext2/c4/c4_new/c4_omni 모두 같은 entrypoint로 처리.
+    tokenizer, testenc = load_eval_tokens(
+        args.model_id,
+        dataset_name=args.dataset,
+        split=args.eval_split,
+        seqlen=args.eval_seqlen,
+        nsamples=args.eval_nsamples,
+        c4_cache_dir=args.c4_cache_dir,
+    )
 
     print("[2] Loading model...")
     model = AutoModelForCausalLM.from_pretrained(
@@ -904,10 +954,11 @@ def main():
         low_cpu_mem_usage=True,
     )
     model.eval()
-    model.seqlen = model.config.max_position_embeddings
+    # compute_perplexity가 model.seqlen에 의존하므로 args.eval_seqlen으로 일관 설정.
+    model.seqlen = args.eval_seqlen
 
     probe_text = get_probe_text()
-    target_layer_indices = resolve_target_layers(model, args.replace_scope, args.one_layer_idx)
+    target_layer_indices = resolve_target_layers(model, arch, args.replace_scope, args.one_layer_idx)
 
     # -----------------------------------------------------
     # Baseline probe
@@ -916,6 +967,7 @@ def main():
         print("[3] Collecting baseline probe outputs/logits...")
         ref_module_outputs, ref_logits = collect_module_outputs(
             model=model,
+            arch=arch,
             tokenizer=tokenizer,
             text=probe_text,
             target_layer_indices=target_layer_indices,
@@ -928,7 +980,7 @@ def main():
     # Baseline PPL
     # -----------------------------------------------------
     print("[4] Computing baseline PPL...")
-    input_device = get_model_main_device(model)
+    input_device = get_model_main_device(model, arch)
     baseline_ppl = compute_perplexity(
         model=model,
         testenc=testenc,
@@ -945,6 +997,7 @@ def main():
     print("[5] Replacing modules with ExperimentLinear...")
     replaced_names = replace_modules_with_experiment_linear(
         model=model,
+        arch=arch,
         layer_indices=target_layer_indices,
         module_names=module_names,
         enable_grouping=args.enable_grouping,
@@ -977,6 +1030,7 @@ def main():
         print("[6] Collecting modified probe outputs/logits...")
         new_module_outputs, new_logits = collect_module_outputs(
             model=model,
+            arch=arch,
             tokenizer=tokenizer,
             text=probe_text,
             target_layer_indices=target_layer_indices,
